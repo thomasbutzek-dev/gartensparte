@@ -1,4 +1,4 @@
-﻿export const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 
 import type { Metadata } from "next";
 import { asc, eq } from "drizzle-orm";
@@ -22,14 +22,14 @@ export default function TerminePage() {
     <div className="space-y-8">
       <h1 className="text-2xl font-bold">Termine</h1>
       <section className="space-y-4">
-        {upcoming.length === 0 && <p className="text-stone-500">Zurzeit sind keine Termine angekÃ¼ndigt.</p>}
+        {upcoming.length === 0 && <p className="text-stone-500">Zurzeit sind keine Termine angekündigt.</p>}
         {upcoming.map((event) => (
           <article key={event.id} className={card}>
             <h2 className="font-semibold">{event.title}</h2>
             <p className="text-sm text-stone-500">
               {formatDateTime(event.date)}
               {event.endDate ? ` bis ${formatDateTime(event.endDate)}` : ""}
-              {event.location ? ` Â· ${event.location}` : ""}
+              {event.location ? ` · ${event.location}` : ""}
             </p>
             {event.description && <p className="mt-2 whitespace-pre-line text-sm">{event.description}</p>}
           </article>
@@ -41,7 +41,7 @@ export default function TerminePage() {
           <ul className="space-y-1 text-sm text-stone-500">
             {past.map((event) => (
               <li key={event.id}>
-                {formatDateTime(event.date)} â€“ {event.title}
+                {formatDateTime(event.date)} – {event.title}
               </li>
             ))}
           </ul>

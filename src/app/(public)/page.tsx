@@ -1,4 +1,4 @@
-﻿export const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import { asc, desc, eq } from "drizzle-orm";
@@ -36,28 +36,28 @@ export default function StartPage() {
             href="/freie-gaerten"
             className="mt-5 inline-block rounded-md bg-white px-4 py-2 font-medium text-green-800 hover:bg-green-50"
           >
-            {freeGardens.length === 1 ? "1 freier Garten" : `${freeGardens.length} freie GÃ¤rten`} â€“ jetzt ansehen
+            {freeGardens.length === 1 ? "1 freier Garten" : `${freeGardens.length} freie Gärten`} – jetzt ansehen
           </Link>
         )}
       </section>
 
       <div className="grid gap-6 md:grid-cols-2">
         <section className={card}>
-          <h2 className="mb-3 text-lg font-semibold">NÃ¤chste Termine</h2>
-          {nextEvents.length === 0 && <p className="text-sm text-stone-500">Zurzeit sind keine Termine angekÃ¼ndigt.</p>}
+          <h2 className="mb-3 text-lg font-semibold">Nächste Termine</h2>
+          {nextEvents.length === 0 && <p className="text-sm text-stone-500">Zurzeit sind keine Termine angekündigt.</p>}
           <ul className="space-y-3">
             {nextEvents.map((event) => (
               <li key={event.id}>
                 <p className="font-medium">{event.title}</p>
                 <p className="text-sm text-stone-500">
                   {formatDateTime(event.date)}
-                  {event.location ? ` Â· ${event.location}` : ""}
+                  {event.location ? ` · ${event.location}` : ""}
                 </p>
               </li>
             ))}
           </ul>
           <Link href="/termine" className="mt-4 inline-block text-sm text-green-700 hover:underline">
-            Alle Termine â†’
+            Alle Termine →
           </Link>
         </section>
 
@@ -75,7 +75,7 @@ export default function StartPage() {
             ))}
           </ul>
           <Link href="/news" className="mt-4 inline-block text-sm text-green-700 hover:underline">
-            Alle News â†’
+            Alle News →
           </Link>
         </section>
       </div>

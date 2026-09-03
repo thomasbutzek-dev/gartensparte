@@ -1,4 +1,4 @@
-﻿export const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -16,7 +16,7 @@ export default function VorstandPage() {
         <p className="whitespace-pre-line leading-relaxed">{settings.ansprechpartnerText}</p>
       </div>
       <p className="text-sm text-stone-500">
-        Sie erreichen uns am einfachsten Ã¼ber das <Link href="/kontakt" className="text-green-700 hover:underline">Kontaktformular</Link>.
+        Sie erreichen uns am einfachsten über das <Link href="/kontakt" className="text-green-700 hover:underline">Kontaktformular</Link>.
       </p>
     </div>
   );

@@ -1,4 +1,4 @@
-﻿export const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 
 import type { Metadata } from "next";
 import { desc, eq } from "drizzle-orm";
@@ -33,7 +33,7 @@ export default function DokumentePage() {
   return (
     <div className="space-y-8">
       <h1 className="text-2xl font-bold">Dokumente & Formulare</h1>
-      {docs.length === 0 && <p className="text-stone-500">Zurzeit sind keine Dokumente verfÃ¼gbar.</p>}
+      {docs.length === 0 && <p className="text-stone-500">Zurzeit sind keine Dokumente verfügbar.</p>}
       {[...groups.entries()].map(([group, items]) => (
         <section key={group} className={card}>
           <h2 className="mb-3 text-lg font-semibold">{group}</h2>
