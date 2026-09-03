@@ -1,0 +1,14 @@
+services:
+  web:
+    build: .
+    container_name: gartensparte
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      # Enthält SQLite-Datenbank, Uploads und erzeugte PDFs.
+      # Sicherung = diesen Ordner kopieren.
+      - ./data:/app/data
+    environment:
+      # Passwort des ersten Admin-Kontos (nur beim allerersten Start relevant)
+      ADMIN_START_PASSWORD: ${ADMIN_START_PASSWORD:-gartensparte-start}

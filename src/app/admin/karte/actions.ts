@@ -1,0 +1,43 @@
+"use server";
+
+import { join } from "node:path";
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { eq } from "drizzle-orm";
+import { z } from "zod";
+import { db, tables, uploadsDir } from "@/db";
+import { requireUser } from "@/lib/auth";
+import { saveUpload } from "@/lib/files";
+import { setMapBackgroundFile } from "@/lib/map";
+
+const pointsSchema = z.array(z.tuple([z.number().min(0).max(2000), z.number().min(0).max(2000)])).min(3).max(200);
+
+export async function savePolygon(gardenId: number, points: [number, number][]) {
+  await requireUser();
+  const parsed = pointsSchema.safeParse(points);
+  if (!parsed.success) return { error: "Ungültige Fläche (mindestens 3 Punkte)." };
+  const rounded = parsed.data.map(([x, y]) => [Math.round(x * 10) / 10, Math.round(y * 10) / 10]);
+  db.update(tables.gardens).set({ polygon: JSON.stringify(rounded) }).where(eq(tables.gardens.id, gardenId)).run();
+  revalidatePath("/admin/karte");
+  revalidatePath("/freie-gaerten");
+  return { ok: true };
+}
+
+export async function deletePolygon(gardenId: number) {
+  await requireUser();
+  db.update(tables.gardens).set({ polygon: null }).where(eq(tables.gardens.id, gardenId)).run();
+  revalidatePath("/admin/karte");
+  revalidatePath("/freie-gaerten");
+  return { ok: true };
+}
+
+export async function uploadMapBackground(formData: FormData) {
+  await requireUser();
+  const file = formData.get("file") as File | null;
+  if (!file) redirect("/admin/karte?fehler=datei");
+  const saved = await saveUpload(join(uploadsDir, "karte"), file);
+  if ("error" in saved) redirect("/admin/karte?fehler=datei");
+  setMapBackgroundFile(saved.fileName);
+  revalidatePath("/admin/karte");
+  redirect("/admin/karte?ok=1");
+}
