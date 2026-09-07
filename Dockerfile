@@ -1,6 +1,10 @@
 # ---- Abhängigkeiten ----
 FROM node:24-bookworm-slim AS deps
 WORKDIR /app
+# better-sqlite3 braucht einen nativen Build (Python + g++)
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends python3 make g++ \
+    && rm -rf /var/lib/apt/lists/*
 COPY package.json package-lock.json ./
 RUN npm ci
 
