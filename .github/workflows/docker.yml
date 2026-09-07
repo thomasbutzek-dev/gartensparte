@@ -34,3 +34,14 @@ jobs:
             ghcr.io/${{ github.repository }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      # Privates Repo, aber das Image muss der VPS ohne Login ziehen können
+      - name: Image öffentlich machen
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api --method PATCH \
+            -H "Accept: application/vnd.github+json" \
+            "/user/packages/container/${GITHUB_REPOSITORY#*/}" \
+            -f visibility=public
