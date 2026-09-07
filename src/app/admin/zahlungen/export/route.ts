@@ -1,6 +1,7 @@
 import { asc, eq } from "drizzle-orm";
 import { db, tables } from "@/db";
 import { canManageMoney, getSessionUser } from "@/lib/auth";
+import { formatDate } from "@/lib/format";
 
 function csvField(value: string | number | null): string {
   const text = String(value ?? "");
@@ -43,8 +44,8 @@ export async function GET(request: Request) {
         csvField(row.description),
         csvField((row.amountCents / 100).toFixed(2).replace(".", ",")),
         csvField((row.paidCents / 100).toFixed(2).replace(".", ",")),
-        csvField(row.paidAt),
-        csvField(row.dueDate),
+        csvField(row.paidAt ? formatDate(row.paidAt) : ""),
+        csvField(row.dueDate ? formatDate(row.dueDate) : ""),
         csvField(row.dunningLevel),
       ].join(";"),
     );

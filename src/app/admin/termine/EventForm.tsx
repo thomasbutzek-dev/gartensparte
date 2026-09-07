@@ -1,3 +1,4 @@
+import { DateTimeField } from "@/components/DateField";
 import { btnPrimary, input, label } from "@/lib/ui";
 
 type EventValues = {
@@ -19,11 +20,11 @@ export default function EventForm({ values = {}, submitLabel }: { values?: Event
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className={label} htmlFor="date">Beginn *</label>
-          <input id="date" name="date" type="datetime-local" required defaultValue={values.date} className={input} />
+          <DateTimeField id="date" name="date" required defaultValue={values.date} />
         </div>
         <div>
           <label className={label} htmlFor="endDate">Ende (optional)</label>
-          <input id="endDate" name="endDate" type="datetime-local" defaultValue={values.endDate ?? ""} className={input} />
+          <DateTimeField id="endDate" name="endDate" defaultValue={values.endDate} />
         </div>
       </div>
       <div>

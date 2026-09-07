@@ -3,6 +3,7 @@ import { db, tables } from "@/db";
 import { requireUser } from "@/lib/auth";
 import { getMapBackgroundFile, parsePolygon } from "@/lib/map";
 import { btn, card, gardenStatusLabels, gardenStatusMapColors } from "@/lib/ui";
+import FileDropField from "@/components/FileDropField";
 import GardenMap from "@/components/GardenMap";
 import MapEditor from "./MapEditor";
 import { uploadMapBackground } from "./actions";
@@ -40,10 +41,10 @@ export default async function KartePage({ searchParams }: PageProps<"/admin/kart
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">Karte</h1>
+        <h1 className="text-2xl font-bold">Lageplan</h1>
         <div className="flex gap-2">
           <a href={editMode ? "/admin/karte" : "/admin/karte?modus=zeichnen"} className={btn}>
-            {editMode ? "Zeichenmodus beenden" : "Parzellen zeichnen"}
+            {editMode ? "Bearbeiten beenden" : "Parzellen bearbeiten"}
           </a>
         </div>
       </div>
@@ -54,7 +55,11 @@ export default async function KartePage({ searchParams }: PageProps<"/admin/kart
       )}
 
       <p className="text-sm text-stone-500">
+        Der Plan der Anlage mit den Parzellen. Die Anfahrt für Besucher steht unter Website.
+      </p>
+      <p className="text-sm text-stone-500">
         {drawnCount} von {gardens.length} Parzellen eingezeichnet.
+        {editMode ? "" : " Schieflage oder geänderte Grenzen: Parzellen bearbeiten, dann die Eckpunkte ziehen."}
         {" "}Legende:{" "}
         {Object.entries(gardenStatusLabels).map(([value, text]) => (
           <span key={value} className="mr-3 inline-flex items-center gap-1">
@@ -75,9 +80,14 @@ export default async function KartePage({ searchParams }: PageProps<"/admin/kart
         <p className="text-sm text-stone-500">
           Scan des Lageplans (JPG/PNG) hochladen – er wird halbtransparent hinter die Parzellen gelegt und dient als Zeichenvorlage.
         </p>
-        <form action={uploadMapBackground} className="flex flex-wrap items-center gap-3">
-          <input name="file" type="file" required accept="image/*" className="text-sm" />
-          <button className={btn}>{mapBackground ? "Lageplan ersetzen" : "Lageplan hochladen"}</button>
+        <form action={uploadMapBackground}>
+          <FileDropField
+            required
+            autoSubmit
+            accept="image/*"
+            label={mapBackground ? "Neuen Lageplan hierher ziehen" : "Lageplan hierher ziehen oder klicken"}
+            hint="JPG, PNG oder WebP"
+          />
         </form>
       </section>
     </div>

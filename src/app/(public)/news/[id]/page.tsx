@@ -1,8 +1,11 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 import { db, tables } from "@/db";
 import { formatDate } from "@/lib/format";
+import SiteContainer from "@/components/SiteContainer";
 
 export default async function NewsDetailPage({ params }: PageProps<"/news/[id]">) {
   const { id } = await params;
@@ -14,7 +17,8 @@ export default async function NewsDetailPage({ params }: PageProps<"/news/[id]">
   if (!item) notFound();
 
   return (
-    <article className="mx-auto max-w-2xl space-y-4">
+    <SiteContainer narrow className="py-10">
+    <article className="space-y-4">
       <Link href="/news" className="text-sm text-green-700 hover:underline">
         ← Alle News
       </Link>
@@ -22,5 +26,6 @@ export default async function NewsDetailPage({ params }: PageProps<"/news/[id]">
       <p className="text-sm text-stone-500">{formatDate(item.publishedAt)}</p>
       <div className="whitespace-pre-line leading-relaxed">{item.body}</div>
     </article>
+    </SiteContainer>
   );
 }

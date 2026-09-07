@@ -1,3 +1,4 @@
+import { DateField } from "@/components/DateField";
 import { input, label } from "@/lib/ui";
 
 type MemberValues = {
@@ -51,7 +52,7 @@ export default function MemberFields({ values = {} }: { values?: MemberValues })
       </div>
       <div>
         <label className={label} htmlFor="memberSince">Mitglied seit</label>
-        <input id="memberSince" name="memberSince" type="date" defaultValue={values.memberSince ?? ""} className={input} />
+        <DateField id="memberSince" name="memberSince" defaultValue={values.memberSince} />
       </div>
       <div>
         <label className={label} htmlFor="note">Bemerkung</label>

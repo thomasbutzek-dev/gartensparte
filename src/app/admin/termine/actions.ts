@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { db, tables } from "@/db";
 import { requireUser } from "@/lib/auth";
+import { parseDateTimeInput } from "@/lib/format";
 
 const eventSchema = z.object({
   title: z.string().trim().min(1).max(200),
@@ -19,8 +20,8 @@ const eventSchema = z.object({
 function parseEvent(formData: FormData) {
   return eventSchema.parse({
     title: formData.get("title"),
-    date: formData.get("date"),
-    endDate: formData.get("endDate"),
+    date: parseDateTimeInput(String(formData.get("date") ?? "")) ?? "",
+    endDate: parseDateTimeInput(String(formData.get("endDate") ?? "")) ?? "",
     location: formData.get("location"),
     description: formData.get("description"),
     status: formData.get("status") ?? "entwurf",

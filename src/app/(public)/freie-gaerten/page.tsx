@@ -6,6 +6,7 @@ import { euro } from "@/lib/format";
 import { getMapBackgroundFile, parsePolygon } from "@/lib/map";
 import { btnPrimary, card, input, label, tableClass, td, th } from "@/lib/ui";
 import GardenMap from "@/components/GardenMap";
+import SiteContainer from "@/components/SiteContainer";
 import SpamGuard from "@/components/SpamGuard";
 import { submitApplication } from "../actions";
 
@@ -15,20 +16,21 @@ export default async function FreieGaertenPage({ searchParams }: PageProps<"/fre
   const params = await searchParams;
   const settings = getSettings();
   const gardens = db.select().from(tables.gardens).orderBy(asc(tables.gardens.number)).all();
-  const freeGardens = gardens.filter((g) => g.status === "frei");
+  const existingGardens = gardens.filter((g) => g.status !== "entfaellt");
+  const freeGardens = existingGardens.filter((g) => g.status === "frei");
   const mapBackground = getMapBackgroundFile();
 
   // Öffentliche Karte: bewusst OHNE Personenbezug (kein Pächtername)
-  const mapGardens = gardens.map((g) => ({
+  const mapGardens = existingGardens.map((g) => ({
     id: g.id,
     number: g.number,
-    status: g.status === "frei" ? "frei" : "verpachtet", // intern feinere Status, öffentlich nur frei/vergeben
+    status: g.status === "frei" ? "frei" : "verpachtet",
     sizeSqm: g.sizeSqm,
     polygon: parsePolygon(g.polygon),
   }));
 
   return (
-    <div className="space-y-8">
+    <SiteContainer className="space-y-8 py-10">
       <h1 className="text-2xl font-bold">Freie Gärten</h1>
       <p className="max-w-2xl whitespace-pre-line text-stone-600">{settings.uebernahmeText}</p>
 
@@ -111,6 +113,6 @@ export default async function FreieGaertenPage({ searchParams }: PageProps<"/fre
           <button className={btnPrimary}>Anfrage senden</button>
         </form>
       </section>
-    </div>
+    </SiteContainer>
   );
 }

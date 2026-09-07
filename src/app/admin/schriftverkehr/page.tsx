@@ -1,21 +1,18 @@
 import Link from "next/link";
 import { asc, desc, eq, isNull } from "drizzle-orm";
 import { db, tables } from "@/db";
-import { requireUser } from "@/lib/auth";
+import { requireUser, canManageMoney } from "@/lib/auth";
 import { formatDate } from "@/lib/format";
+import { archiveTypeLabels } from "@/lib/letter-catalog";
 import { btn, btnPrimary, card, input, label, tableClass, td, th } from "@/lib/ui";
-import { createCircular, createTermination, deleteLetter } from "./actions";
-
-const typeLabels: Record<string, string> = {
-  rechnung: "Rechnung",
-  mahnung: "Mahnung",
-  kuendigung: "Kündigung",
-  rundschreiben: "Rundschreiben",
-};
+import { runAnnualInvoices } from "@/app/admin/zahlungen/actions";
+import { deleteLetter } from "./actions";
+import LetterComposer from "./LetterComposer";
 
 export default async function SchriftverkehrPage({ searchParams }: PageProps<"/admin/schriftverkehr">) {
-  await requireUser();
+  const user = await requireUser();
   const params = await searchParams;
+  const runYear = new Date().getFullYear();
   const typeFilter = typeof params.typ === "string" ? params.typ : "";
 
   const letters = db
@@ -24,6 +21,7 @@ export default async function SchriftverkehrPage({ searchParams }: PageProps<"/a
       type: tables.letters.type,
       number: tables.letters.number,
       subject: tables.letters.subject,
+      status: tables.letters.status,
       createdAt: tables.letters.createdAt,
       memberId: tables.letters.memberId,
       firstName: tables.members.firstName,
@@ -33,7 +31,23 @@ export default async function SchriftverkehrPage({ searchParams }: PageProps<"/a
     .leftJoin(tables.members, eq(tables.letters.memberId, tables.members.id))
     .orderBy(desc(tables.letters.createdAt))
     .all()
-    .filter((letter) => !typeFilter || letter.type === typeFilter);
+    .filter((letter) => {
+      if (typeFilter === "entwurf") return letter.status === "entwurf";
+      return !typeFilter || letter.type === typeFilter;
+    });
+
+  const templates = db
+    .select()
+    .from(tables.letterTemplates)
+    .orderBy(asc(tables.letterTemplates.letterGroup), asc(tables.letterTemplates.name))
+    .all()
+    .filter((template) => template.type !== "rechnung")
+    .map((template) => ({
+      id: template.id,
+      type: template.type,
+      name: template.name || template.type,
+      letterGroup: template.letterGroup,
+    }));
 
   const activeTenancies = db
     .select({
@@ -53,7 +67,7 @@ export default async function SchriftverkehrPage({ searchParams }: PageProps<"/a
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">Schriftverkehr</h1>
+        <h1 className="text-2xl font-bold">Briefe</h1>
         <Link href="/admin/schriftverkehr/vorlagen" className={btn}>Vorlagen bearbeiten</Link>
       </div>
 
@@ -63,71 +77,55 @@ export default async function SchriftverkehrPage({ searchParams }: PageProps<"/a
           <a href={`/api/briefe/${params.ok}`} target="_blank" className="underline">PDF öffnen</a>.
           {params.hinweis === "schriftform" && (
             <span className="mt-1 block text-sm">
-              Wichtig: Kündigungen müssen unterschrieben und nachweisbar zugestellt werden (Einwurf-Einschreiben oder Übergabe mit Zeugen).
+              Kündigung: unterschreiben und den Zugang nachweisen (Einwurf-Einschreiben oder Übergabe mit Zeugen).
             </span>
           )}
         </p>
       )}
-      {params.fehler === "eingabe" && <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">Bitte alle Pflichtfelder ausfüllen.</p>}
+      {params.fehler === "eingabe" && <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">Bitte Empfänger und die nötigen Angaben eintragen.</p>}
       {params.fehler === "mitglieder" && <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">Keine aktiven Mitglieder vorhanden.</p>}
 
+      {typeof params.lauf === "string" && (
+        <p className="rounded-md bg-green-100 px-4 py-3 text-green-800">
+          Rechnungslauf abgeschlossen: {params.lauf} Rechnung(en) erstellt, {params.uebersprungen ?? 0} Mitglied(er) übersprungen (bereits abgerechnet).
+          Die PDFs stehen unten im Archiv. Offene Posten unter{" "}
+          <Link href="/admin/zahlungen" className="underline">Zahlungen</Link>.
+        </p>
+      )}
+      {params.fehler === "jahr" && <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">Bitte ein gültiges Jahr angeben.</p>}
+      {params.fehler === "vorlage" && (
+        <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">
+          Briefvorlage fehlt – unter{" "}
+          <Link href="/admin/schriftverkehr/vorlagen" className="underline">Vorlagen</Link> anlegen.
+        </p>
+      )}
+
       <p className="text-sm text-stone-500">
-        Rechnungen entstehen über den <Link href="/admin/zahlungen" className="text-green-700 hover:underline">Rechnungslauf</Link>,
-        Mahnungen direkt bei den offenen Posten. Hier: Kündigungen, Rundschreiben und das Archiv aller PDFs.
+        Erst der Entwurf, dann das PDF. Mahnungen zu offenen Posten können Sie auch unter{" "}
+        <Link href="/admin/zahlungen" className="text-green-700 hover:underline">Zahlungen</Link> anstoßen.
       </p>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <section className={`${card} space-y-3`}>
-          <h2 className="text-lg font-semibold">Kündigung erstellen</h2>
-          <form action={createTermination} className="space-y-3">
+      {canManageMoney(user) && (
+        <section id="rechnungslauf" className={`${card} space-y-3`}>
+          <h2 className="text-lg font-semibold">Jahresrechnungen</h2>
+          <p className="text-sm text-stone-500">
+            Erstellt pro Mitglied mit Garten eine Rechnung (Pacht, Beitrag, Strom, fehlende Arbeitsstunden des Vorjahres, Umlage)
+            samt PDF. Bereits abgerechnete Mitglieder werden übersprungen. Sätze unter Einstellungen.
+          </p>
+          <form action={runAnnualInvoices} className="flex flex-wrap items-end gap-3">
             <div>
-              <label className={label} htmlFor="kPaar">Pächter / Garten</label>
-              <select id="kPaar" name="paar" required className={input}>
-                <option value="">Bitte wählen…</option>
-                {activeTenancies.map((t) => (
-                  <option key={`${t.memberId}-${t.gardenId}`} value={`${t.memberId}:${t.gardenId}`}>
-                    Garten {t.gardenNumber} – {t.lastName}, {t.firstName}
-                  </option>
-                ))}
-              </select>
+              <label className={label} htmlFor="runYear">Abrechnungsjahr</label>
+              <input id="runYear" name="year" type="number" defaultValue={runYear} className={`${input} w-28`} />
             </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div>
-                <label className={label} htmlFor="kFrist">Kündigung zum</label>
-                <input id="kFrist" name="frist" type="date" required defaultValue={`${new Date().getFullYear()}-11-30`} className={input} />
-              </div>
-              <div>
-                <label className={label} htmlFor="kGrund">Grund</label>
-                <input id="kGrund" name="grund" className={input} placeholder="z.B. § 9 BKleingG" />
-              </div>
-            </div>
-            <button className={btnPrimary}>Kündigungsschreiben erstellen</button>
-            <p className="text-xs text-stone-500">
-              Setzt den Gartenstatus auf „Kündigung“ und legt einen Chronik-Eintrag an. Das PDF muss unterschrieben und
-              nachweisbar zugestellt werden.
-            </p>
+            <button className={btnPrimary}>Rechnungslauf starten</button>
           </form>
         </section>
+      )}
 
-        <section className={`${card} space-y-3`}>
-          <h2 className="text-lg font-semibold">Rundschreiben an alle aktiven Mitglieder</h2>
-          <form action={createCircular} className="space-y-3">
-            <div>
-              <label className={label} htmlFor="rSubject">Betreff</label>
-              <input id="rSubject" name="subject" required className={input} placeholder="z.B. Einladung Mitgliederversammlung" />
-            </div>
-            <div>
-              <label className={label} htmlFor="rText">Text</label>
-              <textarea id="rText" name="text" rows={6} required className={input} />
-            </div>
-            <button className={btnPrimary}>Sammel-PDF erstellen</button>
-            <p className="text-xs text-stone-500">Erzeugt eine PDF-Datei mit einem adressierten Brief pro Mitglied – fertig zum Drucken.</p>
-          </form>
-        </section>
-      </div>
+      <LetterComposer templates={templates} tenancies={activeTenancies} />
 
       <div className="flex flex-wrap gap-2 text-sm">
-        {[["", "Alle"], ...Object.entries(typeLabels)].map(([value, text]) => (
+        {[["", "Alle"], ["entwurf", "Entwürfe"], ...Object.entries(archiveTypeLabels)].map(([value, text]) => (
           <Link
             key={value}
             href={`/admin/schriftverkehr${value ? `?typ=${value}` : ""}`}
@@ -153,11 +151,21 @@ export default async function SchriftverkehrPage({ searchParams }: PageProps<"/a
             {letters.map((letter) => (
               <tr key={letter.id}>
                 <td className={td}>{formatDate(letter.createdAt)}</td>
-                <td className={td}>{typeLabels[letter.type]}{letter.number ? ` ${letter.number}` : ""}</td>
                 <td className={td}>
-                  <a href={`/api/briefe/${letter.id}`} target="_blank" className="text-green-800 hover:underline">
-                    {letter.subject}
-                  </a>
+                  {letter.status === "entwurf" ? "Entwurf · " : ""}
+                  {archiveTypeLabels[letter.type] ?? letter.type}
+                  {letter.number && !letter.number.startsWith("zahlung-") ? ` ${letter.number}` : ""}
+                </td>
+                <td className={td}>
+                  {letter.status === "entwurf" ? (
+                    <Link href={`/admin/schriftverkehr/${letter.id}`} className="text-green-800 hover:underline">
+                      {letter.subject}
+                    </Link>
+                  ) : (
+                    <a href={`/api/briefe/${letter.id}`} target="_blank" className="text-green-800 hover:underline">
+                      {letter.subject}
+                    </a>
+                  )}
                 </td>
                 <td className={td}>
                   {letter.memberId ? (

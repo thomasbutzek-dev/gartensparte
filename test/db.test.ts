@@ -1,18 +1,20 @@
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { beforeAll, describe, expect, it } from "vitest";
+import { eq } from "drizzle-orm";
+import { describe, expect, it } from "vitest";
 
 process.env.DATA_DIR = mkdtempSync(join(tmpdir(), "gartensparte-test-"));
 
 // Import erst nach Setzen von DATA_DIR
 const { db, tables } = await import("@/db");
 const { nextInvoiceNumber, getSettings, saveSettings } = await import("@/lib/settings");
-const { parsePolygon } = await import("@/lib/map");
+const { insertIndexOnEdge, parsePolygon } = await import("@/lib/map");
+const { applyGardenCount, removeGarden } = await import("@/lib/gardens");
 
 describe("Seed", () => {
-  it("legt 104 Gärten an", () => {
-    expect(db.select().from(tables.gardens).all()).toHaveLength(104);
+  it("legt keine Gärten an", () => {
+    expect(db.select().from(tables.gardens).all()).toHaveLength(0);
   });
 
   it("legt ein Admin-Konto an", () => {
@@ -22,8 +24,42 @@ describe("Seed", () => {
     expect(users[0].role).toBe("admin");
   });
 
-  it("legt fünf Briefvorlagen an", () => {
-    expect(db.select().from(tables.letterTemplates).all()).toHaveLength(5);
+  it("legt die Briefvorlagen an", async () => {
+    const { LETTER_CATALOG } = await import("@/lib/letter-catalog");
+    expect(db.select().from(tables.letterTemplates).all()).toHaveLength(LETTER_CATALOG.length);
+  });
+});
+
+describe("Gartenanzahl", () => {
+  it("legt Nummern 1 bis N an, entfernt Leere und behält Pacht", () => {
+    expect(applyGardenCount(4)).toMatchObject({ created: 4, removed: 0, markedUnused: 0, keptBecauseTenant: 0 });
+    expect(db.select().from(tables.gardens).all()).toHaveLength(4);
+
+    db.update(tables.gardens).set({ note: "Akte" }).where(eq(tables.gardens.number, 4)).run();
+    db.insert(tables.members).values({ firstName: "Inge", lastName: "Test" }).run();
+    const member = db.select().from(tables.members).get();
+    const garden3 = db.select().from(tables.gardens).where(eq(tables.gardens.number, 3)).get();
+    expect(member && garden3).toBeTruthy();
+    db.insert(tables.tenancies).values({ gardenId: garden3!.id, memberId: member!.id, startDate: "2026-01-01" }).run();
+
+    const result = applyGardenCount(2);
+    expect(result).toMatchObject({ created: 0, removed: 0, markedUnused: 1, keptBecauseTenant: 1 });
+    const remaining = db.select().from(tables.gardens).all().sort((a, b) => a.number - b.number);
+    expect(remaining.map((garden) => garden.number)).toEqual([1, 2, 3, 4]);
+    expect(remaining.find((garden) => garden.number === 4)?.status).toBe("entfaellt");
+
+    expect(applyGardenCount(6).created).toBe(2);
+    expect(applyGardenCount(4)).toMatchObject({ created: 0, removed: 2, markedUnused: 0, keptBecauseTenant: 0 });
+    expect(db.select().from(tables.gardens).all().map((garden) => garden.number).sort((a, b) => a - b)).toEqual([1, 2, 3, 4]);
+  });
+
+  it("löscht eine Nummer ohne Pächter und blockiert eine mit Pächter", () => {
+    const empty = db.select().from(tables.gardens).where(eq(tables.gardens.number, 1)).get();
+    const rented = db.select().from(tables.gardens).where(eq(tables.gardens.number, 3)).get();
+    expect(empty && rented).toBeTruthy();
+    expect(removeGarden(rented!.id)).toEqual({ error: "pacht" });
+    expect(removeGarden(empty!.id)).toMatchObject({ ok: true, number: 1, files: [] });
+    expect(db.select().from(tables.gardens).where(eq(tables.gardens.number, 1)).get()).toBeUndefined();
   });
 });
 
@@ -47,6 +83,14 @@ describe("Einstellungen", () => {
   });
 });
 
+describe("Briefvorlagen", () => {
+  it("hat eindeutige Typ-Schlüssel", async () => {
+    const { LETTER_CATALOG } = await import("@/lib/letter-catalog");
+    const types = LETTER_CATALOG.map((item) => item.type);
+    expect(new Set(types).size).toBe(types.length);
+  });
+});
+
 describe("Karten-Polygone", () => {
   it("parst gültige Polygone", () => {
     expect(parsePolygon("[[0,0],[10,0],[10,10]]")).toEqual([[0, 0], [10, 0], [10, 10]]);
@@ -56,5 +100,12 @@ describe("Karten-Polygone", () => {
     expect(parsePolygon(null)).toBeNull();
     expect(parsePolygon("kein json")).toBeNull();
     expect(parsePolygon("[[0,0],[1,1]]")).toBeNull(); // weniger als 3 Punkte
+  });
+
+  it("findet den Einfügepunkt auf einer Kante", () => {
+    const square: [number, number][] = [[0, 0], [100, 0], [100, 100], [0, 100]];
+    expect(insertIndexOnEdge(square, [50, 0], 8)).toBe(1);
+    expect(insertIndexOnEdge(square, [0, 0], 8)).toBeNull();
+    expect(insertIndexOnEdge(square, [50, 50], 8)).toBeNull();
   });
 });

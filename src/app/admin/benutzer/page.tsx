@@ -17,8 +17,9 @@ export default async function BenutzerPage({ searchParams }: PageProps<"/admin/b
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Benutzer</h1>
-      {params.ok === "angelegt" && <p className="rounded-md bg-green-100 px-4 py-3 text-green-800">Benutzer angelegt.</p>}
+      <h1 className="text-2xl font-bold">Konten</h1>
+      <p className="text-sm text-stone-500">Wer sich in die Verwaltung einloggen darf. Der Benutzername ist nur fürs Anmelden, der Name erscheint in der Seitenleiste.</p>
+      {params.ok === "angelegt" && <p className="rounded-md bg-green-100 px-4 py-3 text-green-800">Konto angelegt.</p>}
       {params.ok === "passwort" && <p className="rounded-md bg-green-100 px-4 py-3 text-green-800">Passwort geändert (alle Sitzungen des Benutzers beendet).</p>}
       {params.fehler === "eingabe" && <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">Bitte Eingaben prüfen (Passwort mind. 8 Zeichen, Benutzername nur Kleinbuchstaben/Ziffern).</p>}
       {params.fehler === "benutzername" && <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">Benutzername ist bereits vergeben.</p>}

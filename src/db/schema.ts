@@ -43,7 +43,7 @@ export const gardens = sqliteTable(
     id: integer("id").primaryKey({ autoIncrement: true }),
     number: integer("number").notNull(),
     sizeSqm: real("size_sqm"),
-    status: text("status", { enum: ["verpachtet", "frei", "kuendigung", "verwahrlost"] })
+    status: text("status", { enum: ["verpachtet", "frei", "kuendigung", "verwahrlost", "entfaellt"] })
       .notNull()
       .default("frei"),
     meterNumber: text("meter_number").notNull().default(""),
@@ -121,6 +121,18 @@ export const workHours = sqliteTable(
   (t) => [index("work_hours_member_idx").on(t.memberId)],
 );
 
+/** Sondertätigkeit/Befreiung: das Jahressoll gilt als erfüllt. */
+export const workExemptions = sqliteTable(
+  "work_exemptions",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    memberId: integer("member_id").notNull().references(() => members.id, { onDelete: "cascade" }),
+    year: integer("year").notNull(),
+    reason: text("reason").notNull(),
+  },
+  (t) => [uniqueIndex("work_exemptions_member_year").on(t.memberId, t.year)],
+);
+
 // ---------- Termine, Aufgaben, News ----------
 
 export const events = sqliteTable("events", {
@@ -195,12 +207,14 @@ export const letters = sqliteTable(
   "letters",
   {
     id: integer("id").primaryKey({ autoIncrement: true }),
-    type: text("type", { enum: ["rechnung", "mahnung", "kuendigung", "rundschreiben"] }).notNull(),
+    type: text("type").notNull(), // rechnung, mahnung, abmahnung, kuendigung, rundschreiben, sonstiges
     number: text("number"), // Rechnungsnummer, z.B. 2026-001
     memberId: integer("member_id").references(() => members.id, { onDelete: "set null" }),
     gardenId: integer("garden_id").references(() => gardens.id, { onDelete: "set null" }),
     subject: text("subject").notNull(),
-    fileName: text("file_name").notNull(), // PDF in data/letters
+    body: text("body").notNull().default(""),
+    fileName: text("file_name").notNull(), // PDF in data/letters; leer = Entwurf
+    status: text("status", { enum: ["entwurf", "fertig"] }).notNull().default("fertig"),
     createdAt: text("created_at").notNull(),
     createdBy: integer("created_by").references(() => users.id),
   },
@@ -209,11 +223,13 @@ export const letters = sqliteTable(
 
 export const letterTemplates = sqliteTable("letter_templates", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  type: text("type", { enum: ["rechnung", "mahnung1", "mahnung2", "kuendigung", "rundschreiben"] })
-    .notNull()
-    .unique(),
+  type: text("type").notNull().unique(),
+  name: text("name").notNull().default(""),
+  letterGroup: text("letter_group").notNull().default("sonstiges"),
+  effect: text("effect").notNull().default("none"), // none | kuendigung
+  locked: integer("locked", { mode: "boolean" }).notNull().default(false),
   subject: text("subject").notNull(),
-  body: text("body").notNull(), // Platzhalter wie {{name}}, {{garten_nummer}}, {{betrag}}, {{frist}}
+  body: text("body").notNull(),
   updatedAt: text("updated_at").notNull(),
 });
 
@@ -242,6 +258,27 @@ export const inquiries = sqliteTable("inquiries", {
   message: text("message").notNull(),
   createdAt: text("created_at").notNull(),
   isRead: integer("is_read", { mode: "boolean" }).notNull().default(false),
+});
+
+// ---------- Öffentlicher Auftritt ----------
+
+export const galleryImages = sqliteTable("gallery_images", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  fileName: text("file_name").notNull(),
+  caption: text("caption").notNull().default(""),
+  sortOrder: integer("sort_order").notNull().default(0),
+  showOnHome: integer("show_on_home", { mode: "boolean" }).notNull().default(true),
+  uploadedAt: text("uploaded_at").notNull(),
+});
+
+export const boardMembers = sqliteTable("board_members", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  role: text("role").notNull().default(""),
+  email: text("email").notNull().default(""),
+  phone: text("phone").notNull().default(""),
+  photoFile: text("photo_file"),
+  sortOrder: integer("sort_order").notNull().default(0),
 });
 
 // ---------- Einstellungen (Key/Value, JSON-Werte) ----------

@@ -2,16 +2,10 @@ import { desc } from "drizzle-orm";
 import { db, tables } from "@/db";
 import { requireUser } from "@/lib/auth";
 import { formatDate } from "@/lib/format";
+import FileDropField from "@/components/FileDropField";
+import { publicCategoryLabel, publicCategoryOptions } from "@/lib/categories";
 import { badge, btnPrimary, card, input, label, tableClass, td, th } from "@/lib/ui";
 import { deleteDocument, toggleDocumentPublic, uploadDocument } from "./actions";
-
-const categories: Record<string, string> = {
-  satzung: "Satzung",
-  gartenordnung: "Gartenordnung",
-  formular: "Formular",
-  protokoll: "Protokoll",
-  sonstiges: "Sonstiges",
-};
 
 export default async function AdminDokumentePage({ searchParams }: PageProps<"/admin/dokumente">) {
   await requireUser();
@@ -30,28 +24,37 @@ export default async function AdminDokumentePage({ searchParams }: PageProps<"/a
         „Öffentlich“ = auf der Website sichtbar (z.B. Satzung, Formulare). Interne Dokumente (z.B. Protokolle) sehen nur angemeldete Vorstandsmitglieder.
       </p>
 
-      <form action={uploadDocument} className={`${card} grid gap-3 sm:grid-cols-2 lg:grid-cols-5`}>
-        <div className="lg:col-span-2">
+      <form action={uploadDocument} className={`${card} grid gap-3 sm:grid-cols-2`}>
+        <div className="sm:col-span-2">
           <label className={label} htmlFor="title">Titel *</label>
           <input id="title" name="title" required className={input} placeholder="z.B. Satzung (Stand 2026)" />
         </div>
         <div>
           <label className={label} htmlFor="category">Kategorie</label>
           <select id="category" name="category" className={input}>
-            {Object.entries(categories).map(([value, text]) => (
-              <option key={value} value={value}>{text}</option>
+            {publicCategoryOptions().map((item) => (
+              <option key={item.value} value={item.value}>{item.label}</option>
             ))}
           </select>
         </div>
         <div>
-          <label className={label} htmlFor="file">Datei *</label>
-          <input id="file" name="file" type="file" required className="text-sm" />
+          <label className={label} htmlFor="newCategory">Neue Kategorie</label>
+          <input id="newCategory" name="newCategory" className={input} placeholder="z.B. Rundschreiben" />
         </div>
         <div className="flex items-end gap-3">
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" name="isPublic" value="1" /> Öffentlich
           </label>
           <button className={btnPrimary}>Hochladen</button>
+        </div>
+        <div className="sm:col-span-2">
+          <label className={label}>Datei *</label>
+          <FileDropField
+            required
+            accept="application/pdf,image/jpeg,image/png,image/webp,.docx,.xlsx"
+            label="Datei hierher ziehen oder klicken"
+            hint="PDF, JPG, PNG, WebP, DOCX oder XLSX, höchstens 15 MB"
+          />
         </div>
       </form>
 
@@ -75,7 +78,7 @@ export default async function AdminDokumentePage({ searchParams }: PageProps<"/a
                   </a>
                   <div className="text-xs text-stone-400">{doc.originalName}</div>
                 </td>
-                <td className={td}>{categories[doc.category] ?? doc.category}</td>
+                <td className={td}>{publicCategoryLabel(doc.category)}</td>
                 <td className={td}>
                   <span className={`${badge} ${doc.isPublic ? "bg-green-100 text-green-800" : "bg-stone-200 text-stone-700"}`}>
                     {doc.isPublic ? "Öffentlich" : "Intern"}

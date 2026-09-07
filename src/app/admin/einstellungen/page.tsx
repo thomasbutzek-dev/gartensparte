@@ -15,39 +15,15 @@ export default async function EinstellungenPage({ searchParams }: PageProps<"/ad
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <h1 className="text-2xl font-bold">Einstellungen</h1>
+      <p className="text-sm text-stone-500">
+        Bank, Beiträge und Impressum. Name, Adresse und Vorstand stehen unter{" "}
+        <a href="/admin/website" className="text-green-700 hover:underline">Website</a>.
+        Die Anzahl der Gärten stellen Sie unter{" "}
+        <a href="/admin/gaerten" className="text-green-700 hover:underline">Gärten</a> ein.
+      </p>
       {params.ok && <p className="rounded-md bg-green-100 px-4 py-3 text-green-800">Einstellungen gespeichert.</p>}
 
       <form action={updateSettings} className="space-y-6">
-        <section className={`${card} space-y-4`}>
-          <h2 className="text-lg font-semibold">Verein (Briefkopf & Website)</h2>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label className={label} htmlFor="vereinName">Vereinsname</label>
-              <input id="vereinName" name="vereinName" defaultValue={s.vereinName} className={input} />
-            </div>
-            <div>
-              <label className={label} htmlFor="vorsitzender">Vorsitzende/r</label>
-              <input id="vorsitzender" name="vorsitzender" defaultValue={s.vorsitzender} className={input} />
-            </div>
-            <div>
-              <label className={label} htmlFor="vereinStrasse">Straße</label>
-              <input id="vereinStrasse" name="vereinStrasse" defaultValue={s.vereinStrasse} className={input} />
-            </div>
-            <div>
-              <label className={label} htmlFor="vereinOrt">PLZ Ort</label>
-              <input id="vereinOrt" name="vereinOrt" defaultValue={s.vereinOrt} className={input} />
-            </div>
-            <div>
-              <label className={label} htmlFor="vereinEmail">E-Mail</label>
-              <input id="vereinEmail" name="vereinEmail" defaultValue={s.vereinEmail} className={input} />
-            </div>
-            <div>
-              <label className={label} htmlFor="vereinTelefon">Telefon</label>
-              <input id="vereinTelefon" name="vereinTelefon" defaultValue={s.vereinTelefon} className={input} />
-            </div>
-          </div>
-        </section>
-
         <section className={`${card} space-y-4`}>
           <h2 className="text-lg font-semibold">Bankverbindung (Rechnungs-Fußzeile)</h2>
           <div className="grid gap-4 sm:grid-cols-3">
@@ -111,19 +87,11 @@ export default async function EinstellungenPage({ searchParams }: PageProps<"/ad
         </section>
 
         <section className={`${card} space-y-4`}>
-          <h2 className="text-lg font-semibold">Texte auf der Website</h2>
-          <div>
-            <label className={label} htmlFor="startText">Startseite – Begrüßung</label>
-            <textarea id="startText" name="startText" rows={3} defaultValue={s.startText} className={input} />
-          </div>
-          <div>
-            <label className={label} htmlFor="ansprechpartnerText">Vorstand & Ansprechpartner</label>
-            <textarea id="ansprechpartnerText" name="ansprechpartnerText" rows={4} defaultValue={s.ansprechpartnerText} className={input} />
-          </div>
-          <div>
-            <label className={label} htmlFor="uebernahmeText">Freie Gärten – Ablauf der Übernahme</label>
-            <textarea id="uebernahmeText" name="uebernahmeText" rows={3} defaultValue={s.uebernahmeText} className={input} />
-          </div>
+          <h2 className="text-lg font-semibold">Impressum & Datenschutz</h2>
+          <p className="text-sm text-stone-500">
+            Texte, Fotos und die Vereinsadresse stehen unter{" "}
+            <a href="/admin/website" className="text-green-700 hover:underline">Website</a>.
+          </p>
           <div>
             <label className={label} htmlFor="impressumText">Impressum</label>
             <textarea id="impressumText" name="impressumText" rows={5} defaultValue={s.impressumText} className={input} />

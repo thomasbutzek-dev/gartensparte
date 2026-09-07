@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { db, tables } from "@/db";
 import { requireUser, requireAdminRole } from "@/lib/auth";
-import { today } from "@/lib/format";
+import { parseDateInput, today } from "@/lib/format";
 
 const memberSchema = z.object({
   firstName: z.string().trim().min(1).max(100),
@@ -29,7 +29,7 @@ function parseMember(formData: FormData) {
     city: formData.get("city"),
     phone: formData.get("phone"),
     email: formData.get("email"),
-    memberSince: formData.get("memberSince"),
+    memberSince: parseDateInput(String(formData.get("memberSince") ?? "")) ?? "",
     note: formData.get("note"),
   });
 }

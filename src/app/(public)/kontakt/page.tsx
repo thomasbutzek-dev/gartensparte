@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
-import { getSettings } from "@/lib/settings";
+import { getSettings, hasMapPoint, mapsSearchUrl, officeHoursLabel, osmEmbedUrl } from "@/lib/settings";
 import { btnPrimary, card, input, label } from "@/lib/ui";
+import PublicMap from "@/components/PublicMap";
+import SiteContainer from "@/components/SiteContainer";
 import SpamGuard from "@/components/SpamGuard";
 import { submitInquiry } from "../actions";
 
@@ -11,12 +13,16 @@ export default async function KontaktPage({ searchParams }: PageProps<"/kontakt"
   const settings = getSettings();
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <SiteContainer narrow className="space-y-6 py-10">
       <h1 className="text-2xl font-bold">Kontakt</h1>
-      {settings.vereinTelefon || settings.vereinEmail ? (
+      {hasMapPoint(settings) && mapsSearchUrl(settings) && osmEmbedUrl(settings) ? (
+        <PublicMap embedUrl={osmEmbedUrl(settings)!} pageUrl={mapsSearchUrl(settings)!} />
+      ) : null}
+      {settings.vereinTelefon || settings.vereinEmail || officeHoursLabel(settings) ? (
         <p className="text-stone-600">
           {settings.vereinTelefon && <>Telefon: {settings.vereinTelefon}. </>}
-          {settings.vereinEmail && <>E-Mail: {settings.vereinEmail}.</>}
+          {settings.vereinEmail && <>E-Mail: {settings.vereinEmail}. </>}
+          {officeHoursLabel(settings) ? <span className="mt-2 block">{officeHoursLabel(settings)}</span> : null}
         </p>
       ) : null}
       {params.ok && (
@@ -49,6 +55,6 @@ export default async function KontaktPage({ searchParams }: PageProps<"/kontakt"
         </div>
         <button className={btnPrimary}>Nachricht senden</button>
       </form>
-    </div>
+    </SiteContainer>
   );
 }

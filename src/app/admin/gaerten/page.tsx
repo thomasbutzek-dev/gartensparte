@@ -2,7 +2,9 @@ import Link from "next/link";
 import { asc, isNull, eq } from "drizzle-orm";
 import { db, tables } from "@/db";
 import { requireUser } from "@/lib/auth";
-import { badge, btn, btnPrimary, card, gardenStatusColors, gardenStatusLabels, tableClass, td, th } from "@/lib/ui";
+import { badge, btn, btnPrimary, card, gardenStatusColors, gardenStatusLabels, input, label, tableClass, td, th } from "@/lib/ui";
+import { gardenCountsFrom } from "@/lib/site";
+import { createGarden, setGardenCount } from "./actions";
 
 export default async function GaertenPage({ searchParams }: PageProps<"/admin/gaerten">) {
   await requireUser();
@@ -35,15 +37,76 @@ export default async function GaertenPage({ searchParams }: PageProps<"/admin/ga
       );
     });
 
+  const occupancy = gardenCountsFrom(gardens);
+  const highestNumber = gardens.reduce((max, garden) => Math.max(max, garden.number), 0);
+  const created = Number(params.angelegt ?? 0);
+  const removed = Number(params.entfernt ?? 0);
+  const markedUnused = Number(params.ausgeblendet ?? 0);
+  const kept = Number(params.behalten ?? 0);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">Gärten ({filtered.length})</h1>
         <div className="flex gap-2">
-          <Link href="/admin/gaerten/erfassen" className={btn}>Schnellerfassung</Link>
-          <Link href="/admin/karte" className={btnPrimary}>Zur Karte</Link>
+          <Link href="/admin/gaerten/erfassen" className={btn}>Nacheinander erfassen</Link>
+          <Link href="/admin/karte" className={btnPrimary}>Zum Lageplan</Link>
         </div>
       </div>
+      {params.ok === "angelegt" && <p className="rounded-md bg-green-100 px-4 py-3 text-green-800">Garten angelegt.</p>}
+      {params.ok === "geloescht" && <p className="rounded-md bg-green-100 px-4 py-3 text-green-800">Nummer gelöscht.</p>}
+      {params.ok === "anzahl" && (
+        <p className="rounded-md bg-green-100 px-4 py-3 text-green-800">
+          Anzahl übernommen.
+          {created > 0 ? ` ${created} ${created === 1 ? "Nummer angelegt" : "Nummern angelegt"}.` : ""}
+          {removed > 0 ? ` ${removed} leere ${removed === 1 ? "Nummer entfernt" : "Nummern entfernt"}.` : ""}
+          {markedUnused > 0 ? ` ${markedUnused} auf „Nicht vergeben“ gesetzt.` : ""}
+          {kept > 0 ? ` ${kept} ${kept === 1 ? "Nummer" : "Nummern"} mit laufender Pacht blieben stehen.` : ""}
+        </p>
+      )}
+      {params.fehler === "nummer" && (
+        <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">Bitte eine ganze Nummer zwischen 1 und 9999 eingeben.</p>
+      )}
+      {params.fehler === "anzahl" && (
+        <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">Bitte eine ganze Zahl zwischen 1 und 9999 eingeben.</p>
+      )}
+      {params.fehler === "vergeben" && (
+        <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">Diese Nummer gibt es schon.</p>
+      )}
+      <section className={`${card} space-y-3`}>
+        <h2 className="text-lg font-semibold">Anzahl der Gärten</h2>
+        <p className="text-sm text-stone-500">
+          {occupancy.total === 0
+            ? "Hier die Zahl der Gärten eintragen. Es werden die Nummern 1 bis zu dieser Zahl angelegt."
+            : `Aktuell ${occupancy.total} ${occupancy.total === 1 ? "Garten" : "Gärten"}${highestNumber ? `, höchste Nummer ${highestNumber}` : ""}. Fehlende Nummern bis zur angegebenen Zahl werden angelegt. Höhere Nummern ohne Pächter verschwinden, wenn die Akte leer ist. Akten mit Einträgen bleiben als „Nicht vergeben“ stehen.`}
+        </p>
+        <form action={setGardenCount} className="flex flex-wrap items-end gap-3">
+          <div>
+            <label className={label} htmlFor="gardenCount">Gärten 1 bis</label>
+            <input
+              id="gardenCount"
+              name="count"
+              inputMode="numeric"
+              required
+              defaultValue={highestNumber || undefined}
+              className={`${input} w-32`}
+              placeholder="z.B. 80"
+            />
+          </div>
+          <button className={btnPrimary}>{gardens.length === 0 ? "Anlegen" : "Übernehmen"}</button>
+        </form>
+      </section>
+      <p className="text-sm text-stone-500">
+        Nummern, die es historisch nie gab, in der Akte auf „Nicht vergeben“ setzen – dann zählen sie nicht als frei.
+        Fehlt eine einzelne Nummer, hier anlegen.
+      </p>
+      <form action={createGarden} className="flex flex-wrap items-end gap-3">
+        <div>
+          <label className={label} htmlFor="newNumber">Eine Nummer anlegen</label>
+          <input id="newNumber" name="number" inputMode="numeric" required className={`${input} w-32`} placeholder="z.B. 107" />
+        </div>
+        <button className={btn}>Anlegen</button>
+      </form>
       <form className="flex flex-wrap items-center gap-3">
         <input
           name="suche"

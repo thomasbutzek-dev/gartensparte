@@ -3,12 +3,19 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { asc, desc, eq } from "drizzle-orm";
 import { db, tables } from "@/db";
-import { getSettings } from "@/lib/settings";
+import { boardExtraText, getSettings, hasMapPoint, officeHoursLabel, osmEmbedUrl } from "@/lib/settings";
+import { addressLines, freeGardenCtaLabel, gardenCounts, listBoardMembers, listGalleryImages, mapsSearchUrl } from "@/lib/site";
 import { formatDate, formatDateTime, today } from "@/lib/format";
 import { card } from "@/lib/ui";
+import SiteContainer from "@/components/SiteContainer";
+import GardenHeroArt from "@/components/GardenHeroArt";
+import GardenScenes from "@/components/GardenScenes";
+import PublicMap from "@/components/PublicMap";
+import ImpressionStrip from "@/components/ImpressionStrip";
 
 export default function StartPage() {
   const settings = getSettings();
+  const occupancy = gardenCounts();
   const nextEvents = db
     .select()
     .from(tables.events)
@@ -24,61 +31,149 @@ export default function StartPage() {
     .orderBy(desc(tables.news.publishedAt))
     .limit(3)
     .all();
-  const freeGardens = db.select().from(tables.gardens).where(eq(tables.gardens.status, "frei")).all();
+  const gallery = listGalleryImages(true).slice(0, 6);
+  const board = listBoardMembers().slice(0, 4);
+  const mapsUrl = mapsSearchUrl(settings);
+  const address = addressLines(settings);
 
   return (
-    <div className="space-y-10">
-      <section className="rounded-xl bg-green-700 px-6 py-10 text-white">
-        <h1 className="text-3xl font-bold">{settings.vereinName}</h1>
-        <p className="mt-3 max-w-2xl whitespace-pre-line">{settings.startText}</p>
-        {freeGardens.length > 0 && (
-          <Link
-            href="/freie-gaerten"
-            className="mt-5 inline-block rounded-md bg-white px-4 py-2 font-medium text-green-800 hover:bg-green-50"
-          >
-            {freeGardens.length === 1 ? "1 freier Garten" : `${freeGardens.length} freie Gärten`} – jetzt ansehen
-          </Link>
-        )}
+    <div>
+      <section className="relative overflow-hidden bg-green-800 text-white">
+        {settings.heroFile ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src="/api/hero" alt="" className="absolute inset-0 h-full w-full object-cover" />
+        ) : null}
+        <div className={`relative ${settings.heroFile ? "bg-green-950/55" : "bg-gradient-to-br from-green-800 via-green-800 to-green-950"}`}>
+          {!settings.heroFile ? <GardenHeroArt /> : null}
+          <SiteContainer className="relative flex min-h-[28rem] flex-col justify-end py-14 md:min-h-[32rem]">
+            <div className="max-w-2xl">
+              {settings.logoFile ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src="/api/logo" alt="" className="mb-5 h-16 w-16 rounded-full bg-white object-contain p-1 shadow" />
+              ) : null}
+              <h1 className="text-4xl font-bold tracking-tight md:text-5xl">{settings.vereinName}</h1>
+              {settings.slogan ? <p className="mt-3 text-lg text-green-50">{settings.slogan}</p> : null}
+              <p className="mt-4 max-w-xl whitespace-pre-line text-green-50/90">{settings.startText}</p>
+              <div className="mt-7 flex flex-wrap gap-3">
+                <Link
+                  href="/freie-gaerten"
+                  className="rounded-md bg-white px-4 py-2.5 font-medium text-green-900 hover:bg-green-50"
+                >
+                  {freeGardenCtaLabel(occupancy)}
+                </Link>
+                <Link
+                  href="/kontakt"
+                  className="rounded-md border border-white/60 px-4 py-2.5 font-medium text-white hover:bg-white/10"
+                >
+                  Kontakt
+                </Link>
+              </div>
+            </div>
+          </SiteContainer>
+        </div>
       </section>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <section className={card}>
-          <h2 className="mb-3 text-lg font-semibold">Nächste Termine</h2>
-          {nextEvents.length === 0 && <p className="text-sm text-stone-500">Zurzeit sind keine Termine angekündigt.</p>}
-          <ul className="space-y-3">
-            {nextEvents.map((event) => (
-              <li key={event.id}>
-                <p className="font-medium">{event.title}</p>
-                <p className="text-sm text-stone-500">
-                  {formatDateTime(event.date)}
-                  {event.location ? ` · ${event.location}` : ""}
-                </p>
-              </li>
-            ))}
-          </ul>
-          <Link href="/termine" className="mt-4 inline-block text-sm text-green-700 hover:underline">
-            Alle Termine →
-          </Link>
-        </section>
+      <GardenScenes settings={settings} />
 
-        <section className={card}>
-          <h2 className="mb-3 text-lg font-semibold">Neuigkeiten</h2>
-          {latestNews.length === 0 && <p className="text-sm text-stone-500">Noch keine Neuigkeiten.</p>}
-          <ul className="space-y-3">
-            {latestNews.map((item) => (
-              <li key={item.id}>
-                <Link href={`/news/${item.id}`} className="font-medium text-green-800 hover:underline">
-                  {item.title}
-                </Link>
-                <p className="text-sm text-stone-500">{formatDate(item.publishedAt)}</p>
-              </li>
-            ))}
-          </ul>
-          <Link href="/news" className="mt-4 inline-block text-sm text-green-700 hover:underline">
-            Alle News →
-          </Link>
-        </section>
-      </div>
+      <SiteContainer className="space-y-14 py-12">
+        <div className="grid gap-6 md:grid-cols-2">
+          <section className={card}>
+            <h2 className="mb-3 text-lg font-semibold">Nächste Termine</h2>
+            {nextEvents.length === 0 && <p className="text-sm text-stone-500">Zurzeit sind keine Termine angekündigt.</p>}
+            <ul className="space-y-3">
+              {nextEvents.map((event) => (
+                <li key={event.id}>
+                  <p className="font-medium">{event.title}</p>
+                  <p className="text-sm text-stone-500">
+                    {formatDateTime(event.date)}
+                    {event.location ? ` · ${event.location}` : ""}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <Link href="/termine" className="mt-4 inline-block text-sm text-green-700 hover:underline">
+              Alle Termine
+            </Link>
+          </section>
+
+          <section className={card}>
+            <h2 className="mb-3 text-lg font-semibold">News</h2>
+            {latestNews.length === 0 && <p className="text-sm text-stone-500">Noch keine Neuigkeiten.</p>}
+            <ul className="space-y-3">
+              {latestNews.map((item) => (
+                <li key={item.id}>
+                  <Link href={`/news/${item.id}`} className="font-medium text-green-800 hover:underline">
+                    {item.title}
+                  </Link>
+                  <p className="text-sm text-stone-500">{formatDate(item.publishedAt)}</p>
+                </li>
+              ))}
+            </ul>
+            <Link href="/news" className="mt-4 inline-block text-sm text-green-700 hover:underline">
+              Alle News
+            </Link>
+          </section>
+        </div>
+
+        <ImpressionStrip images={gallery} />
+
+        <div className="grid gap-6 md:grid-cols-2">
+          <section className={card}>
+            <h2 className="mb-4 text-lg font-semibold">Vorstand</h2>
+            {board.length === 0 ? (
+              <p className="whitespace-pre-line text-sm text-stone-600">{boardExtraText(settings)}</p>
+            ) : (
+              <ul className="space-y-3">
+                {board.map((member) => (
+                  <li key={member.id} className="flex items-center gap-3">
+                    {member.photoFile ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={`/api/vorstand-foto/${member.id}`} alt="" className="h-12 w-12 rounded-full object-cover" />
+                    ) : (
+                      <span className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-sm font-semibold text-green-800">
+                        {member.name.slice(0, 1)}
+                      </span>
+                    )}
+                    <span>
+                      <span className="block font-medium">{member.name}</span>
+                      {member.role ? <span className="text-sm text-stone-500">{member.role}</span> : null}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {officeHoursLabel(settings) ? (
+              <p className="mt-3 text-sm text-stone-600">{officeHoursLabel(settings)}</p>
+            ) : null}
+            <Link href="/vorstand" className="mt-4 inline-block text-sm text-green-700 hover:underline">
+              Alle Ansprechpartner
+            </Link>
+          </section>
+
+          <section className={card}>
+            <h2 className="mb-3 text-lg font-semibold">Anfahrt</h2>
+            {address.slice(1).length > 0 ? (
+              <p>
+                {address.slice(1).map((line) => (
+                  <span key={line} className="block">
+                    {line}
+                  </span>
+                ))}
+              </p>
+            ) : (
+              <p className="text-sm text-stone-500">Die Anschrift wird noch ergänzt.</p>
+            )}
+            {settings.directionsText ? <p className="mt-3 whitespace-pre-line text-sm text-stone-600">{settings.directionsText}</p> : null}
+            {hasMapPoint(settings) && mapsUrl && osmEmbedUrl(settings) ? (
+              <PublicMap embedUrl={osmEmbedUrl(settings)!} pageUrl={mapsUrl} />
+            ) : mapsUrl ? (
+              <a href={mapsUrl} target="_blank" rel="noreferrer" className="mt-4 inline-block text-sm text-green-700 hover:underline">
+                Auf OpenStreetMap öffnen
+              </a>
+            ) : null}
+          </section>
+        </div>
+      </SiteContainer>
     </div>
   );
 }

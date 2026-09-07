@@ -6,6 +6,7 @@ import { desc, eq } from "drizzle-orm";
 import { db, tables } from "@/db";
 import { formatDate } from "@/lib/format";
 import { card } from "@/lib/ui";
+import SiteContainer from "@/components/SiteContainer";
 
 export const metadata: Metadata = { title: "News" };
 
@@ -18,7 +19,7 @@ export default function NewsPage() {
     .all();
 
   return (
-    <div className="space-y-6">
+    <SiteContainer className="space-y-6 py-10">
       <h1 className="text-2xl font-bold">News</h1>
       {items.length === 0 && <p className="text-stone-500">Noch keine Neuigkeiten.</p>}
       {items.map((item) => (
@@ -32,6 +33,6 @@ export default function NewsPage() {
           <p className="mt-2 line-clamp-3 whitespace-pre-line text-sm">{item.body}</p>
         </article>
       ))}
-    </div>
+    </SiteContainer>
   );
 }

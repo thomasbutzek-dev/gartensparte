@@ -2,6 +2,7 @@ import Link from "next/link";
 import { and, asc, desc, eq, isNull } from "drizzle-orm";
 import { db, tables } from "@/db";
 import { requireUser } from "@/lib/auth";
+import { DateField } from "@/components/DateField";
 import { formatDate, today } from "@/lib/format";
 import { btn, btnPrimary, card, input, label, tableClass, td, th } from "@/lib/ui";
 import { saveReading } from "./actions";
@@ -9,7 +10,12 @@ import { saveReading } from "./actions";
 export default async function AblesenPage({ searchParams }: PageProps<"/admin/ablesen">) {
   await requireUser();
   const params = await searchParams;
-  const gardens = db.select().from(tables.gardens).orderBy(asc(tables.gardens.number)).all();
+  const gardens = db
+    .select()
+    .from(tables.gardens)
+    .orderBy(asc(tables.gardens.number))
+    .all()
+    .filter((garden) => garden.status !== "entfaellt");
   const readings = db.select().from(tables.meterReadings).orderBy(desc(tables.meterReadings.date), desc(tables.meterReadings.id)).all();
   const latestByGarden = new Map<number, (typeof readings)[number]>();
   for (const reading of readings) {
@@ -52,7 +58,7 @@ export default async function AblesenPage({ searchParams }: PageProps<"/admin/ab
             </div>
             <div>
               <label className={label} htmlFor="date">Datum</label>
-              <input id="date" name="date" type="date" defaultValue={today()} className={input} />
+              <DateField id="date" name="date" defaultValue={today()} />
             </div>
             <div>
               <label className={label} htmlFor="note">Bemerkung (z.B. Zählerwechsel)</label>
@@ -79,7 +85,7 @@ export default async function AblesenPage({ searchParams }: PageProps<"/admin/ab
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">Stromzähler</h1>
+        <h1 className="text-2xl font-bold">Strom ablesen</h1>
         {firstWithMeter && (
           <Link href={`/admin/ablesen?nr=${firstWithMeter.number}`} className={btnPrimary}>
             Ablese-Tour starten

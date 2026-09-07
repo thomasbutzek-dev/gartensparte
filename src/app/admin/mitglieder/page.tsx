@@ -29,6 +29,9 @@ export default async function MitgliederPage({ searchParams }: PageProps<"/admin
         <h1 className="text-2xl font-bold">Mitglieder ({filtered.length})</h1>
         <Link href="/admin/mitglieder/neu" className={btnPrimary}>Mitglied anlegen</Link>
       </div>
+      <p className="text-sm text-stone-500">
+        Zuerst das Mitglied anlegen, dann in der Gartenakte zuweisen. Ausgeschiedene bleiben in der Liste, wenn ihr das Häkchen setzt.
+      </p>
       <form className="flex flex-wrap items-center gap-3">
         <input name="suche" placeholder="Suchen…" defaultValue={search} className={`${input} max-w-xs`} />
         <label className="flex items-center gap-2 text-sm">

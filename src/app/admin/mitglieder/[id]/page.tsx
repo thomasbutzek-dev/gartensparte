@@ -4,6 +4,7 @@ import { desc, eq } from "drizzle-orm";
 import { db, tables } from "@/db";
 import { requireUser, canManageMoney, canAdminister } from "@/lib/auth";
 import { euro, formatDate } from "@/lib/format";
+import { getWorkExemption } from "@/lib/work-hours";
 import { btn, btnDanger, btnPrimary, card, tableClass, td, th } from "@/lib/ui";
 import MemberFields from "../MemberFields";
 import { deleteMember, setMemberStatus, updateMember } from "../actions";
@@ -45,6 +46,7 @@ export default async function MitgliedPage({ params, searchParams }: PageProps<"
     .all();
   const currentYear = new Date().getFullYear();
   const hoursThisYear = hours.filter((h) => h.date.startsWith(String(currentYear))).reduce((sum, h) => sum + h.hours, 0);
+  const exemption = getWorkExemption(member.id, currentYear);
 
   const letters = db
     .select()
@@ -101,7 +103,11 @@ export default async function MitgliedPage({ params, searchParams }: PageProps<"
 
           <section className={card}>
             <h2 className="mb-3 text-lg font-semibold">Arbeitsstunden {currentYear}</h2>
-            <p className="text-sm">{hoursThisYear} Stunden erfasst</p>
+            <p className="text-sm">
+              {exemption
+                ? `Soll erfüllt durch ${exemption.reason}${hoursThisYear > 0 ? ` · zusätzlich ${hoursThisYear} Stunden erfasst` : ""}`
+                : `${hoursThisYear} Stunden erfasst`}
+            </p>
             <Link href={`/admin/arbeitsstunden?mitglied=${member.id}`} className="mt-2 inline-block text-sm text-green-700 hover:underline">
               Stunden verwalten →
             </Link>
@@ -139,7 +145,7 @@ export default async function MitgliedPage({ params, searchParams }: PageProps<"
           )}
 
           <section className={card}>
-            <h2 className="mb-3 text-lg font-semibold">Schriftverkehr</h2>
+            <h2 className="mb-3 text-lg font-semibold">Briefe</h2>
             {letters.length === 0 && <p className="text-sm text-stone-500">Keine Schreiben.</p>}
             <ul className="space-y-1 text-sm">
               {letters.map((letter) => (

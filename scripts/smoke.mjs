@@ -52,6 +52,7 @@ const pages = [
   "/admin/dokumente",
   "/admin/posteingang",
   "/admin/benutzer",
+  "/admin/website",
   "/admin/einstellungen",
 ];
 let failures = 0;

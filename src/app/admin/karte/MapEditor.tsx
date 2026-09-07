@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { MAP_HEIGHT, MAP_WIDTH, centroid, type MapGarden } from "@/components/GardenMap";
+import { insertIndexOnEdge } from "@/lib/map-geometry";
 import { btn, btnDanger, btnPrimary, gardenStatusMapColors, input, label } from "@/lib/ui";
 import { deletePolygon, savePolygon } from "./actions";
 
@@ -16,8 +17,13 @@ export default function MapEditor({
   backgroundUrl: string | null;
 }) {
   const router = useRouter();
+  const svgRef = useRef<SVGSVGElement>(null);
+  const dragged = useRef(false);
   const [selectedId, setSelectedId] = useState<number>(0);
   const [points, setPoints] = useState<Point[]>([]);
+  const [draft, setDraft] = useState(false);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dirty, setDirty] = useState(false);
   const [message, setMessage] = useState<string>("");
   const [pending, startTransition] = useTransition();
 
@@ -27,29 +33,90 @@ export default function MapEditor({
   );
   const withoutPolygon = gardens.filter((g) => !g.polygon);
 
-  function toMapCoords(event: React.MouseEvent<SVGSVGElement>): Point {
-    const rect = event.currentTarget.getBoundingClientRect();
-    const x = ((event.clientX - rect.left) / rect.width) * MAP_WIDTH;
-    const y = ((event.clientY - rect.top) / rect.height) * MAP_HEIGHT;
+  function toMapCoords(clientX: number, clientY: number): Point {
+    const svg = svgRef.current;
+    if (!svg) return [0, 0];
+    const rect = svg.getBoundingClientRect();
+    const x = ((clientX - rect.left) / rect.width) * MAP_WIDTH;
+    const y = ((clientY - rect.top) / rect.height) * MAP_HEIGHT;
     return [Math.max(0, Math.min(MAP_WIDTH, x)), Math.max(0, Math.min(MAP_HEIGHT, y))];
   }
 
-  function handleMapClick(event: React.MouseEvent<SVGSVGElement>) {
-    if (!selected) {
-      setMessage("Bitte zuerst unten einen Garten auswählen.");
+  function selectGarden(id: number) {
+    const garden = gardens.find((item) => item.id === id) ?? null;
+    setSelectedId(id);
+    setDragIndex(null);
+    setDirty(false);
+    setMessage("");
+    if (garden?.polygon && garden.polygon.length >= 3) {
+      setPoints(garden.polygon.map((point) => [point[0], point[1]] as Point));
+      setDraft(false);
       return;
     }
-    const [x, y] = toMapCoords(event);
-    // Klick nahe am ersten Punkt schließt die Fläche
+    setPoints([]);
+    setDraft(true);
+  }
+
+  function handleMapClick(event: React.MouseEvent<SVGSVGElement>) {
+    if (dragged.current) {
+      dragged.current = false;
+      return;
+    }
+    if (!selected) {
+      setMessage("Bitte zuerst einen Garten wählen oder eine Parzelle anklicken.");
+      return;
+    }
+    const point = toMapCoords(event.clientX, event.clientY);
+
+    if (!draft && points.length >= 3) {
+      const insertAt = insertIndexOnEdge(points, point, 14);
+      if (insertAt !== null) {
+        setPoints((prev) => [...prev.slice(0, insertAt), point, ...prev.slice(insertAt)]);
+        setDirty(true);
+        setMessage("Punkt auf der Kante ergänzt. Ziehen zum Verschieben, Doppelklick zum Entfernen.");
+      }
+      return;
+    }
+
     if (points.length >= 3) {
       const [fx, fy] = points[0];
-      if (Math.hypot(x - fx, y - fy) < 12) {
+      if (Math.hypot(point[0] - fx, point[1] - fy) < 12) {
         void save();
         return;
       }
     }
-    setPoints((prev) => [...prev, [x, y]]);
+    setPoints((prev) => [...prev, point]);
+    setDirty(true);
     setMessage("");
+  }
+
+  function handlePointerMove(event: React.PointerEvent<SVGSVGElement>) {
+    if (dragIndex === null) return;
+    dragged.current = true;
+    const point = toMapCoords(event.clientX, event.clientY);
+    setPoints((prev) => prev.map((item, index) => (index === dragIndex ? point : item)));
+    setDirty(true);
+  }
+
+  function handlePointerUp() {
+    setDragIndex(null);
+  }
+
+  function startVertexDrag(event: React.PointerEvent<SVGCircleElement>, index: number) {
+    event.stopPropagation();
+    event.preventDefault();
+    dragged.current = false;
+    setDragIndex(index);
+    svgRef.current?.setPointerCapture(event.pointerId);
+  }
+
+  function removeVertex(index: number) {
+    if (points.length <= 3) {
+      setMessage("Mindestens 3 Eckpunkte müssen bleiben.");
+      return;
+    }
+    setPoints((prev) => prev.filter((_, item) => item !== index));
+    setDirty(true);
   }
 
   async function save() {
@@ -62,8 +129,8 @@ export default function MapEditor({
       setMessage(result.error ?? "Fehler beim Speichern.");
       return;
     }
-    setPoints([]);
-    setSelectedId(0);
+    setDraft(false);
+    setDirty(false);
     setMessage(`Fläche für Garten ${selected.number} gespeichert.`);
     startTransition(() => router.refresh());
   }
@@ -72,9 +139,13 @@ export default function MapEditor({
     if (!selected) return;
     await deletePolygon(selected.id);
     setPoints([]);
-    setMessage(`Fläche von Garten ${selected.number} gelöscht – jetzt neu zeichnen.`);
+    setDraft(true);
+    setDirty(false);
+    setMessage(`Fläche von Garten ${selected.number} gelöscht. Jetzt neu zeichnen oder einen anderen Garten wählen.`);
     startTransition(() => router.refresh());
   }
+
+  const canSave = points.length >= 3 && (draft || dirty) && !pending;
 
   return (
     <div className="space-y-4">
@@ -85,11 +156,7 @@ export default function MapEditor({
             id="gardenSelect"
             className={`${input} w-64`}
             value={selectedId}
-            onChange={(event) => {
-              setSelectedId(Number(event.target.value));
-              setPoints([]);
-              setMessage("");
-            }}
+            onChange={(event) => selectGarden(Number(event.target.value))}
           >
             <option value={0}>– Garten wählen –</option>
             {withoutPolygon.length > 0 && (
@@ -99,23 +166,32 @@ export default function MapEditor({
                 ))}
               </optgroup>
             )}
-            <optgroup label="Bereits eingezeichnet (neu zeichnen)">
+            <optgroup label="Bereits eingezeichnet">
               {withPolygon.map((g) => (
                 <option key={g.id} value={g.id}>Garten {g.number}</option>
               ))}
             </optgroup>
           </select>
         </div>
-        <button type="button" className={btn} disabled={points.length === 0} onClick={() => setPoints((p) => p.slice(0, -1))}>
-          Letzten Punkt zurück
-        </button>
-        <button type="button" className={btn} disabled={points.length === 0} onClick={() => setPoints([])}>
-          Verwerfen
-        </button>
-        <button type="button" className={btnPrimary} disabled={points.length < 3 || pending} onClick={() => void save()}>
+        {draft && (
+          <>
+            <button type="button" className={btn} disabled={points.length === 0} onClick={() => setPoints((p) => p.slice(0, -1))}>
+              Letzten Punkt zurück
+            </button>
+            <button type="button" className={btn} disabled={points.length === 0} onClick={() => { setPoints([]); setDirty(false); }}>
+              Verwerfen
+            </button>
+          </>
+        )}
+        {!draft && selected && (
+          <button type="button" className={btn} onClick={() => { setPoints([]); setDraft(true); setDirty(false); }}>
+            Neu zeichnen
+          </button>
+        )}
+        <button type="button" className={btnPrimary} disabled={!canSave} onClick={() => void save()}>
           Fläche speichern ({points.length} Punkte)
         </button>
-        {selected?.polygon && (
+        {selected && !draft && selected.polygon && (
           <button type="button" className={btnDanger} disabled={pending} onClick={() => void removePolygon()}>
             Fläche löschen
           </button>
@@ -123,15 +199,19 @@ export default function MapEditor({
       </div>
       {message && <p className="rounded-md bg-stone-100 px-3 py-2 text-sm">{message}</p>}
       <p className="text-sm text-stone-500">
-        Eckpunkte der Parzelle nacheinander anklicken. Zum Schließen auf den ersten Punkt klicken oder „Fläche speichern“.
-        Korrektur: Fläche löschen und neu zeichnen.
+        Neue Parzelle: Eckpunkte nacheinander anklicken, dann speichern.
+        Vorhandene Parzelle: anklicken, Eckpunkte ziehen. Klick auf eine Kante setzt einen Punkt dazu, Doppelklick auf einen Punkt nimmt ihn weg.
       </p>
 
       <div className="w-full overflow-hidden rounded-lg border border-stone-200 bg-white">
         <svg
+          ref={svgRef}
           viewBox={`0 0 ${MAP_WIDTH} ${MAP_HEIGHT}`}
-          className="block h-auto w-full cursor-crosshair select-none"
+          className="block h-auto w-full cursor-crosshair select-none touch-none"
           onClick={handleMapClick}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
         >
           {backgroundUrl ? (
             <image href={backgroundUrl} x={0} y={0} width={MAP_WIDTH} height={MAP_HEIGHT} opacity={0.45} preserveAspectRatio="xMidYMid meet" />
@@ -139,16 +219,16 @@ export default function MapEditor({
             <rect x={0} y={0} width={MAP_WIDTH} height={MAP_HEIGHT} fill="#f5f5f4" />
           )}
           {withPolygon.map((garden) => {
+            if (garden.id === selectedId) return null;
             const [cx, cy] = centroid(garden.polygon);
-            const isSelected = garden.id === selectedId;
             return (
-              <g key={garden.id}>
+              <g key={garden.id} className="cursor-pointer" onClick={(event) => { event.stopPropagation(); selectGarden(garden.id); }}>
                 <polygon
                   points={garden.polygon.map((p) => p.join(",")).join(" ")}
                   fill={gardenStatusMapColors[garden.status] ?? "#d6d3d1"}
-                  fillOpacity={isSelected ? 0.9 : 0.5}
-                  stroke={isSelected ? "#1d4ed8" : "#57534e"}
-                  strokeWidth={isSelected ? 2.5 : 1}
+                  fillOpacity={0.5}
+                  stroke="#57534e"
+                  strokeWidth={1}
                 />
                 <text x={cx} y={cy} textAnchor="middle" dominantBaseline="central" fontSize={13} fontWeight={600} fill="#292524" pointerEvents="none">
                   {garden.number}
@@ -158,25 +238,50 @@ export default function MapEditor({
           })}
           {points.length > 0 && (
             <>
-              <polyline
+              <polygon
                 points={points.map((p) => p.join(",")).join(" ")}
                 fill={points.length >= 3 ? "#3b82f6" : "none"}
-                fillOpacity={0.2}
+                fillOpacity={0.25}
                 stroke="#1d4ed8"
                 strokeWidth={2}
-                strokeDasharray="6 3"
+                strokeDasharray={draft ? "6 3" : undefined}
+                pointerEvents="none"
               />
               {points.map(([x, y], index) => (
                 <circle
                   key={index}
                   cx={x}
                   cy={y}
-                  r={index === 0 ? 7 : 4}
-                  fill={index === 0 ? "#1d4ed8" : "white"}
+                  r={index === 0 && draft ? 7 : 6}
+                  fill={index === 0 && draft ? "#1d4ed8" : "white"}
                   stroke="#1d4ed8"
                   strokeWidth={2}
+                  className={draft ? undefined : "cursor-move"}
+                  onPointerDown={(event) => {
+                    if (draft) return;
+                    startVertexDrag(event, index);
+                  }}
+                  onDoubleClick={(event) => {
+                    event.stopPropagation();
+                    if (!draft) removeVertex(index);
+                  }}
+                  onClick={(event) => event.stopPropagation()}
                 />
               ))}
+              {selected && points.length >= 3 && (
+                <text
+                  x={centroid(points)[0]}
+                  y={centroid(points)[1]}
+                  textAnchor="middle"
+                  dominantBaseline="central"
+                  fontSize={13}
+                  fontWeight={600}
+                  fill="#1e3a8a"
+                  pointerEvents="none"
+                >
+                  {selected.number}
+                </text>
+              )}
             </>
           )}
         </svg>

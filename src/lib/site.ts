@@ -1,0 +1,54 @@
+import { asc, eq } from "drizzle-orm";
+import { db, tables } from "@/db";
+
+export { addressLines, mapsSearchUrl } from "@/lib/settings";
+
+export type GardenCounts = { total: number; free: number; assigned: number };
+
+export function isExistingGarden(status: string): boolean {
+  return status !== "entfaellt";
+}
+
+export function gardenCountsFrom(gardens: { status: string }[]): GardenCounts {
+  const existing = gardens.filter((garden) => isExistingGarden(garden.status));
+  const free = existing.filter((garden) => garden.status === "frei").length;
+  const assigned = existing.filter((garden) => garden.status === "verpachtet" || garden.status === "kuendigung").length;
+  return { total: existing.length, free, assigned };
+}
+
+export function gardenCounts(): GardenCounts {
+  return gardenCountsFrom(db.select({ status: tables.gardens.status }).from(tables.gardens).all());
+}
+
+export function countFreeGardens(): number {
+  return gardenCounts().free;
+}
+
+/** Zahl nur zeigen, wenn schon verpachtet wurde – sonst wirkt „alle frei“ wie ein Fehler. */
+export function showFreeGardenCount(counts: GardenCounts): boolean {
+  return counts.assigned > 0 && counts.free > 0;
+}
+
+export function freeGardenCtaLabel(counts: GardenCounts): string {
+  if (counts.free === 0) return "Garten anfragen";
+  if (!showFreeGardenCount(counts)) return "Freie Gärten ansehen";
+  if (counts.free === 1) return "1 freien Garten jetzt ansehen";
+  return `${counts.free} freie Gärten jetzt ansehen`;
+}
+
+export function listGalleryImages(homeOnly = false) {
+  const rows = db.select().from(tables.galleryImages).orderBy(asc(tables.galleryImages.sortOrder), asc(tables.galleryImages.id)).all();
+  return homeOnly ? rows.filter((row) => row.showOnHome) : rows;
+}
+
+export function listBoardMembers() {
+  return db.select().from(tables.boardMembers).orderBy(asc(tables.boardMembers.sortOrder), asc(tables.boardMembers.id)).all();
+}
+
+export function getGalleryImage(id: number) {
+  return db.select().from(tables.galleryImages).where(eq(tables.galleryImages.id, id)).get();
+}
+
+export function getBoardMember(id: number) {
+  return db.select().from(tables.boardMembers).where(eq(tables.boardMembers.id, id)).get();
+}

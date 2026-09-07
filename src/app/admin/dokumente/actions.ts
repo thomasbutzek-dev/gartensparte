@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { db, tables, uploadsDir } from "@/db";
 import { requireUser } from "@/lib/auth";
+import { categoryFromForm, rememberPublicCategory } from "@/lib/categories";
 import { saveUpload } from "@/lib/files";
 import { nowIso } from "@/lib/format";
 
@@ -22,10 +23,12 @@ export async function uploadDocument(formData: FormData) {
   if (!file || !title) redirect("/admin/dokumente?fehler=eingabe");
   const saved = await saveUpload(join(uploadsDir, "dokumente"), file);
   if ("error" in saved) redirect("/admin/dokumente?fehler=datei");
+  const category = categoryFromForm(formData);
+  rememberPublicCategory(category);
   db.insert(tables.documents)
     .values({
       title: title.slice(0, 200),
-      category: String(formData.get("category") || "sonstiges").slice(0, 50),
+      category,
       fileName: saved.fileName,
       originalName: file.name.slice(0, 200),
       mimeType: saved.mimeType,

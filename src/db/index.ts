@@ -10,7 +10,16 @@ const dataDir = process.env.DATA_DIR || join(process.cwd(), "data");
 export const uploadsDir = join(dataDir, "uploads");
 export const lettersDir = join(dataDir, "letters");
 
-for (const dir of [dataDir, join(uploadsDir, "dokumente"), join(uploadsDir, "gaerten"), join(uploadsDir, "karte"), lettersDir]) {
+for (const dir of [
+  dataDir,
+  join(uploadsDir, "dokumente"),
+  join(uploadsDir, "gaerten"),
+  join(uploadsDir, "karte"),
+  join(uploadsDir, "website"),
+  join(uploadsDir, "galerie"),
+  join(uploadsDir, "vorstand"),
+  lettersDir,
+]) {
   mkdirSync(dir, { recursive: true });
 }
 

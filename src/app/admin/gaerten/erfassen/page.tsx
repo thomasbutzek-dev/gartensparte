@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { and, asc, eq, isNull } from "drizzle-orm";
 import { db, tables } from "@/db";
 import { requireUser } from "@/lib/auth";
+import { DateField } from "@/components/DateField";
 import { today } from "@/lib/format";
 import { btn, btnPrimary, card, gardenStatusLabels, input, label } from "@/lib/ui";
 import { quickSaveGarden } from "../actions";
@@ -33,16 +34,26 @@ export default async function SchnellerfassungPage({ searchParams }: PageProps<"
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">Schnellerfassung: Garten {garden.number}</h1>
+        <h1 className="text-2xl font-bold">Garten {garden.number} erfassen</h1>
         <span className="text-sm text-stone-500">{garden.number} von {total}</span>
       </div>
       <p className="text-sm text-stone-500">
         Daten eintragen und „Speichern & weiter“ – der nächste Garten öffnet sich automatisch.
         Fehlt ein Pächter in der Liste? <Link href="/admin/mitglieder/neu" className="text-green-700 hover:underline">Mitglied anlegen</Link> und danach hier fortsetzen.
       </p>
+      {params.fehler === "nummer" && (
+        <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">Bitte eine ganze Nummer zwischen 1 und 9999 eingeben.</p>
+      )}
+      {params.fehler === "vergeben" && (
+        <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">Diese Nummer ist schon einem anderen Garten zugeordnet.</p>
+      )}
 
       <form action={action} className={`${card} space-y-4`}>
         <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className={label} htmlFor="number">Garten-Nr.</label>
+            <input id="number" name="number" defaultValue={garden.number} required className={input} inputMode="numeric" />
+          </div>
           <div>
             <label className={label} htmlFor="sizeSqm">Größe (m²)</label>
             <input id="sizeSqm" name="sizeSqm" defaultValue={garden.sizeSqm ?? ""} className={input} inputMode="decimal" autoFocus />
@@ -72,7 +83,7 @@ export default async function SchnellerfassungPage({ searchParams }: PageProps<"
           </div>
           <div>
             <label className={label} htmlFor="startDate">Pachtbeginn</label>
-            <input id="startDate" name="startDate" type="date" defaultValue={currentTenancy?.startDate ?? today()} className={input} />
+            <DateField id="startDate" name="startDate" defaultValue={currentTenancy?.startDate ?? today()} />
           </div>
         </div>
         <div>

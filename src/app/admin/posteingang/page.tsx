@@ -11,8 +11,8 @@ export default async function PosteingangPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Posteingang</h1>
-      <p className="text-sm text-stone-500">Nachrichten aus dem Kontaktformular der Website.</p>
+      <h1 className="text-2xl font-bold">Nachrichten</h1>
+      <p className="text-sm text-stone-500">Was über das Kontaktformular auf der Website reinkommt.</p>
       {inquiries.length === 0 && <p className={card}>Keine Nachrichten.</p>}
       <div className="space-y-4">
         {inquiries.map((inquiry) => (

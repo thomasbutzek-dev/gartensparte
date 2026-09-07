@@ -1,26 +1,23 @@
+import FileDropField from "@/components/FileDropField";
 import Link from "next/link";
+import { gardenCategoryLabel, gardenCategoryOptions } from "@/lib/categories";
 import { notFound } from "next/navigation";
 import { asc, desc, eq } from "drizzle-orm";
 import { db, tables } from "@/db";
 import { requireUser, canManageMoney } from "@/lib/auth";
+import { DateField } from "@/components/DateField";
 import { euro, formatDate, today } from "@/lib/format";
-import { badge, btn, btnPrimary, card, gardenStatusColors, gardenStatusLabels, input, label, tableClass, td, th } from "@/lib/ui";
+import { badge, btn, btnDanger, btnPrimary, card, gardenStatusColors, gardenStatusLabels, input, label, tableClass, td, th } from "@/lib/ui";
 import {
   addGardenNote,
   changeTenant,
+  deleteGarden,
   deleteGardenDocument,
   deleteGardenNote,
   endTenancy,
   updateGarden,
   uploadGardenDocument,
 } from "../actions";
-
-const documentCategories: Record<string, string> = {
-  pachtvertrag: "Pachtvertrag",
-  strom: "Stromabrechnung",
-  foto: "Foto",
-  sonstiges: "Sonstiges",
-};
 
 export default async function GartenAktePage({ params, searchParams }: PageProps<"/admin/gaerten/[id]">) {
   const user = await requireUser();
@@ -111,6 +108,27 @@ export default async function GartenAktePage({ params, searchParams }: PageProps
       </div>
 
       {query.ok && <p className="rounded-md bg-green-100 px-4 py-3 text-green-800">Gespeichert.</p>}
+      {query.fehler === "nummer" && (
+        <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">Bitte eine ganze Nummer zwischen 1 und 9999 eingeben.</p>
+      )}
+      {query.fehler === "vergeben" && (
+        <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">Diese Nummer ist schon einem anderen Garten zugeordnet.</p>
+      )}
+      {query.fehler === "pacht" && (
+        <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">
+          Solange ein Pächter eingetragen ist, kann die Nummer nicht auf „Nicht vergeben“ gestellt werden.
+        </p>
+      )}
+      {query.fehler === "pacht-loeschen" && (
+        <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">
+          Solange ein Pächter eingetragen ist, kann die Nummer nicht gelöscht werden. Zuerst das Pachtverhältnis beenden.
+        </p>
+      )}
+      {query.fehler === "bestaetigung" && (
+        <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">
+          Zum Löschen das Kästchen ankreuzen.
+        </p>
+      )}
       {query.fehler === "datei" && (
         <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">
           Upload fehlgeschlagen. Erlaubt sind PDF, JPG, PNG, WebP, DOCX, XLSX bis 15 MB.
@@ -123,6 +141,10 @@ export default async function GartenAktePage({ params, searchParams }: PageProps
           <h2 className="text-lg font-semibold">Stammdaten</h2>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
+              <label className={label} htmlFor="number">Garten-Nr.</label>
+              <input id="number" name="number" defaultValue={garden.number} required className={input} inputMode="numeric" />
+            </div>
+            <div>
               <label className={label} htmlFor="sizeSqm">Größe (m²)</label>
               <input id="sizeSqm" name="sizeSqm" defaultValue={garden.sizeSqm ?? ""} className={input} inputMode="decimal" />
             </div>
@@ -133,6 +155,7 @@ export default async function GartenAktePage({ params, searchParams }: PageProps
                   <option key={value} value={value}>{text}</option>
                 ))}
               </select>
+              <p className="mt-1 text-xs text-stone-500">„Nicht vergeben“ = diese Nummer gibt es in der Anlage nicht.</p>
             </div>
           </div>
           <div>
@@ -161,7 +184,7 @@ export default async function GartenAktePage({ params, searchParams }: PageProps
               <form action={endAction} className="flex flex-wrap items-end gap-3">
                 <div>
                   <label className={label} htmlFor="endDate">Pachtende</label>
-                  <input id="endDate" name="endDate" type="date" defaultValue={today()} className={input} />
+                  <DateField id="endDate" name="endDate" defaultValue={today()} />
                 </div>
                 <button className={btn}>Pachtverhältnis beenden</button>
               </form>
@@ -182,7 +205,7 @@ export default async function GartenAktePage({ params, searchParams }: PageProps
             </div>
             <div>
               <label className={label} htmlFor="startDate">Pachtbeginn</label>
-              <input id="startDate" name="startDate" type="date" defaultValue={today()} required className={input} />
+              <DateField id="startDate" name="startDate" defaultValue={today()} required />
             </div>
             <button className={btnPrimary}>{currentTenancy ? "Wechsel durchführen" : "Zuordnen"}</button>
           </form>
@@ -211,7 +234,7 @@ export default async function GartenAktePage({ params, searchParams }: PageProps
                     {doc.originalName}
                   </a>{" "}
                   <span className="text-xs text-stone-400">
-                    {documentCategories[doc.category] ?? doc.category} · {formatDate(doc.uploadedAt)}
+                    {gardenCategoryLabel(doc.category)} · {formatDate(doc.uploadedAt)}
                   </span>
                 </span>
                 <form action={deleteGardenDocument.bind(null, doc.id, garden.id)}>
@@ -223,17 +246,26 @@ export default async function GartenAktePage({ params, searchParams }: PageProps
           </ul>
           <form action={uploadAction} className="space-y-3 border-t border-stone-100 pt-3">
             <div className="grid gap-3 sm:grid-cols-2">
-              <div>
-                <label className={label} htmlFor="file">Datei</label>
-                <input id="file" name="file" type="file" required className="text-sm" />
+              <div className="sm:col-span-2">
+                <label className={label}>Datei</label>
+                <FileDropField
+                  required
+                  accept="application/pdf,image/jpeg,image/png,image/webp,.docx,.xlsx"
+                  label="Datei hierher ziehen oder klicken"
+                  hint="PDF, Foto oder Office-Datei, höchstens 15 MB"
+                />
               </div>
               <div>
                 <label className={label} htmlFor="category">Kategorie</label>
                 <select id="category" name="category" className={input}>
-                  {Object.entries(documentCategories).map(([value, text]) => (
-                    <option key={value} value={value}>{text}</option>
+                  {gardenCategoryOptions().map((item) => (
+                    <option key={item.value} value={item.value}>{item.label}</option>
                   ))}
                 </select>
+              </div>
+              <div>
+                <label className={label} htmlFor="newCategory">Neue Kategorie</label>
+                <input id="newCategory" name="newCategory" className={input} placeholder="z.B. Versicherung" />
               </div>
             </div>
             <button className={btn}>Hochladen</button>
@@ -247,7 +279,7 @@ export default async function GartenAktePage({ params, searchParams }: PageProps
             <div className="grid gap-3 sm:grid-cols-[10rem_1fr]">
               <div>
                 <label className={label} htmlFor="date">Datum</label>
-                <input id="date" name="date" type="date" defaultValue={today()} className={input} />
+                <DateField id="date" name="date" defaultValue={today()} />
               </div>
               <div>
                 <label className={label} htmlFor="text">Eintrag</label>
@@ -326,6 +358,30 @@ export default async function GartenAktePage({ params, searchParams }: PageProps
           </ul>
         </section>
       </div>
+
+      <section className={`${card} space-y-3`}>
+        <h2 className="text-lg font-semibold">Nummer löschen</h2>
+        {currentTenancy ? (
+          <p className="text-sm text-stone-500">
+            Solange {currentTenancy.firstName} {currentTenancy.lastName} als Pächter eingetragen ist, bleibt die Nummer.
+            Zuerst das Pachtverhältnis beenden.
+          </p>
+        ) : (
+          <>
+            <p className="text-sm text-stone-500">
+              Die Nummer {garden.number} verschwindet komplett, samt Akte, Chronik und hochgeladenen Dateien.
+              Zahlungen und Briefe bleiben beim Mitglied, ohne Gartenbezug.
+            </p>
+            <form action={deleteGarden.bind(null, garden.id)} className="space-y-3">
+              <label className="flex items-start gap-2 text-sm text-stone-700">
+                <input type="checkbox" name="bestaetigt" value="ja" className="mt-1" />
+                Ja, Nummer {garden.number} endgültig löschen
+              </label>
+              <button className={btnDanger}>Nummer löschen</button>
+            </form>
+          </>
+        )}
+      </section>
     </div>
   );
 }

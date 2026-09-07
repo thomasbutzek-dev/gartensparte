@@ -14,6 +14,9 @@ export default async function AdminNewsPage({ searchParams }: PageProps<"/admin/
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">News</h1>
+      <p className="text-sm text-stone-500">
+        Meldungen für die Website. Termine (Versammlung, Arbeitseinsatz) stehen extra unter Termine. Ein Entwurf ist nur hier sichtbar.
+      </p>
       {params.ok && <p className="rounded-md bg-green-100 px-4 py-3 text-green-800">Gespeichert.</p>}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_24rem]">

@@ -27,6 +27,7 @@ export const gardenStatusColors: Record<string, string> = {
   frei: "bg-blue-100 text-blue-800",
   kuendigung: "bg-amber-100 text-amber-800",
   verwahrlost: "bg-red-100 text-red-800",
+  entfaellt: "bg-stone-200 text-stone-600",
 };
 
 export const gardenStatusMapColors: Record<string, string> = {
@@ -34,6 +35,7 @@ export const gardenStatusMapColors: Record<string, string> = {
   frei: "#93c5fd",
   kuendigung: "#fcd34d",
   verwahrlost: "#fca5a5",
+  entfaellt: "#e7e5e4",
 };
 
 export const gardenStatusLabels: Record<string, string> = {
@@ -41,4 +43,5 @@ export const gardenStatusLabels: Record<string, string> = {
   frei: "Frei",
   kuendigung: "Kündigung",
   verwahrlost: "Verwahrlost",
+  entfaellt: "Nicht vergeben",
 };

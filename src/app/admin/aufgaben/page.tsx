@@ -1,6 +1,7 @@
 import { desc } from "drizzle-orm";
 import { db, tables } from "@/db";
 import { requireUser } from "@/lib/auth";
+import { DateField } from "@/components/DateField";
 import { formatDate, today } from "@/lib/format";
 import { badge, btnPrimary, card, input, label, tableClass, td, th } from "@/lib/ui";
 import { createTask, deleteTask, setTaskStatus } from "./actions";
@@ -43,7 +44,7 @@ export default async function AufgabenPage({ searchParams }: PageProps<"/admin/a
         </div>
         <div>
           <label className={label} htmlFor="dueDate">Fällig</label>
-          <input id="dueDate" name="dueDate" type="date" className={input} />
+          <DateField id="dueDate" name="dueDate" />
         </div>
         <div className="flex items-end">
           <button className={btnPrimary}>Anlegen</button>

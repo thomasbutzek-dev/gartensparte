@@ -9,7 +9,8 @@ import { requireMoneyRole } from "@/lib/auth";
 import { getSettings, nextInvoiceNumber, formatEuro } from "@/lib/settings";
 import { createLetter, getTemplate, germanDate, memberAddress } from "@/lib/letters";
 import { fillTemplate, type InvoiceRow } from "@/lib/pdf";
-import { today } from "@/lib/format";
+import { parseDateInput, today } from "@/lib/format";
+import { missingWorkHours } from "@/lib/work-hours";
 
 function euroToCents(value: FormDataEntryValue | null): number | null {
   const text = String(value ?? "").trim().replace(/\./g, "").replace(",", ".");
@@ -20,9 +21,9 @@ function euroToCents(value: FormDataEntryValue | null): number | null {
 }
 
 function addDays(iso: string, days: number): string {
-  const date = new Date(iso);
-  date.setDate(date.getDate() + days);
-  return date.toISOString().slice(0, 10);
+  const [year, month, day] = iso.split("-").map(Number);
+  const date = new Date(year, month - 1, day + days);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
 // ---------- Einzelne Posten ----------
@@ -43,7 +44,7 @@ export async function addPayment(formData: FormData) {
     year: formData.get("year"),
     type: formData.get("type"),
     description: formData.get("description"),
-    dueDate: formData.get("dueDate"),
+    dueDate: parseDateInput(String(formData.get("dueDate") ?? "")) ?? "",
   });
   if (!parsed.success || amountCents === null || amountCents === 0) redirect("/admin/zahlungen?fehler=eingabe");
   const gardenId = Number(formData.get("gardenId") || 0) || null;
@@ -61,7 +62,10 @@ export async function markPaid(paymentId: number, formData: FormData) {
   const amountCents = euroToCents(formData.get("amount")) ?? payment.amountCents - payment.paidCents;
   const newPaid = Math.min(payment.amountCents, payment.paidCents + amountCents);
   db.update(tables.payments)
-    .set({ paidCents: newPaid, paidAt: newPaid >= payment.amountCents ? String(formData.get("paidAt") || today()) : payment.paidAt })
+    .set({
+      paidCents: newPaid,
+      paidAt: newPaid >= payment.amountCents ? parseDateInput(String(formData.get("paidAt") ?? "")) || today() : payment.paidAt,
+    })
     .where(eq(tables.payments.id, paymentId))
     .run();
   revalidatePath("/admin/zahlungen");
@@ -104,22 +108,21 @@ export async function dunPayment(paymentId: number) {
     verein: settings.vereinName,
   };
 
-  await createLetter({
+  const letterId = await createLetter({
     type: "mahnung",
+    number: `zahlung-${payment.id}`,
     memberId: member.id,
     gardenId: payment.gardenId,
     recipient: memberAddress(member),
     subject: fillTemplate(template.subject, values),
     body: fillTemplate(template.body, values),
     createdBy: user.id,
+    status: "entwurf",
   });
 
-  db.update(tables.payments)
-    .set({ dunningLevel: level, dunnedAt: today() })
-    .where(eq(tables.payments.id, paymentId))
-    .run();
   revalidatePath("/admin/zahlungen");
-  redirect("/admin/zahlungen?ok=mahnung");
+  revalidatePath("/admin/schriftverkehr");
+  redirect(`/admin/schriftverkehr/${letterId}`);
 }
 
 // ---------- Jahres-Rechnungslauf ----------
@@ -127,12 +130,12 @@ export async function dunPayment(paymentId: number) {
 export async function runAnnualInvoices(formData: FormData) {
   const user = await requireMoneyRole();
   const year = Number(formData.get("year"));
-  if (!Number.isInteger(year) || year < 2000 || year > 2100) redirect("/admin/zahlungen?fehler=jahr");
+  if (!Number.isInteger(year) || year < 2000 || year > 2100) redirect("/admin/schriftverkehr?fehler=jahr");
 
   const settings = getSettings();
   const dueDate = addDays(today(), settings.zahlungszielTage);
   const template = getTemplate("rechnung");
-  if (!template) redirect("/admin/zahlungen?fehler=vorlage");
+  if (!template) redirect("/admin/schriftverkehr?fehler=vorlage");
 
   // Aktive Pachtverhältnisse mit Mitglied und Garten
   const tenancies = db
@@ -157,6 +160,9 @@ export async function runAnnualInvoices(formData: FormData) {
 
   const readings = db.select().from(tables.meterReadings).orderBy(asc(tables.meterReadings.date), asc(tables.meterReadings.id)).all();
   const prevYearHours = db.select().from(tables.workHours).all().filter((h) => h.date.startsWith(String(year - 1)));
+  const prevYearExempt = new Set(
+    db.select().from(tables.workExemptions).where(eq(tables.workExemptions.year, year - 1)).all().map((row) => row.memberId),
+  );
   const existing = db.select().from(tables.payments).where(eq(tables.payments.year, year)).all();
 
   // Nach Mitglied gruppieren (ein Mitglied kann mehrere Gärten haben)
@@ -212,7 +218,7 @@ export async function runAnnualInvoices(formData: FormData) {
     // Fehlende Arbeitsstunden aus dem Vorjahr
     if (settings.arbeitsstundenSoll > 0 && settings.arbeitsstundenSatzCents > 0) {
       const done = prevYearHours.filter((h) => h.memberId === memberId).reduce((sum, h) => sum + h.hours, 0);
-      const missing = Math.max(0, settings.arbeitsstundenSoll - done);
+      const missing = missingWorkHours(done, prevYearExempt.has(memberId), settings.arbeitsstundenSoll);
       if (missing > 0) {
         rows.push({
           label: `Fehlende Arbeitsstunden ${year - 1} (${missing} h × ${formatEuro(settings.arbeitsstundenSatzCents)})`,
@@ -267,5 +273,5 @@ export async function runAnnualInvoices(formData: FormData) {
 
   revalidatePath("/admin/zahlungen");
   revalidatePath("/admin/schriftverkehr");
-  redirect(`/admin/zahlungen?jahr=${year}&lauf=${created}&uebersprungen=${skipped}`);
+  redirect(`/admin/schriftverkehr?lauf=${created}&uebersprungen=${skipped}`);
 }

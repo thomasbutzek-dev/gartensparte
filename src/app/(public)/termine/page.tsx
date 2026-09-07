@@ -5,6 +5,7 @@ import { asc, eq } from "drizzle-orm";
 import { db, tables } from "@/db";
 import { formatDateTime, today } from "@/lib/format";
 import { card } from "@/lib/ui";
+import SiteContainer from "@/components/SiteContainer";
 
 export const metadata: Metadata = { title: "Termine" };
 
@@ -19,7 +20,7 @@ export default function TerminePage() {
   const past = events.filter((event) => event.date < today()).reverse().slice(0, 10);
 
   return (
-    <div className="space-y-8">
+    <SiteContainer className="space-y-8 py-10">
       <h1 className="text-2xl font-bold">Termine</h1>
       <section className="space-y-4">
         {upcoming.length === 0 && <p className="text-stone-500">Zurzeit sind keine Termine angekündigt.</p>}
@@ -47,6 +48,6 @@ export default function TerminePage() {
           </ul>
         </section>
       )}
-    </div>
+    </SiteContainer>
   );
 }

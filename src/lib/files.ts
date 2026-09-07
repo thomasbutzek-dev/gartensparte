@@ -38,6 +38,26 @@ const allowedUploadTypes: Record<string, string> = {
 
 export const MAX_UPLOAD_BYTES = 15 * 1024 * 1024;
 
+const allowedImageTypes: Record<string, string> = {
+  "image/jpeg": ".jpg",
+  "image/png": ".png",
+  "image/webp": ".webp",
+};
+
+/** Bild-Upload (JPG, PNG, WebP) für Logo, Hero, Galerie, Vorstandsfotos. */
+export async function saveImageUpload(
+  directory: string,
+  file: File,
+): Promise<{ fileName: string; mimeType: string } | { error: string }> {
+  if (!file || file.size === 0) return { error: "Keine Datei ausgewählt." };
+  if (file.size > MAX_UPLOAD_BYTES) return { error: "Die Datei ist zu groß (max. 15 MB)." };
+  const extension = allowedImageTypes[file.type] ?? null;
+  if (!extension) return { error: "Erlaubt sind JPG, PNG und WebP." };
+  const fileName = `${Date.now()}-${randomBytes(6).toString("hex")}${extension}`;
+  await writeFile(join(directory, fileName), Buffer.from(await file.arrayBuffer()));
+  return { fileName, mimeType: file.type };
+}
+
 /** Upload aus einem FormData-File sicher speichern; gibt den erzeugten Dateinamen zurück. */
 export async function saveUpload(directory: string, file: File): Promise<{ fileName: string; mimeType: string } | { error: string }> {
   if (!file || file.size === 0) return { error: "Keine Datei ausgewählt." };

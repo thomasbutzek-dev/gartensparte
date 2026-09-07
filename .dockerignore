@@ -1,0 +1,24 @@
+# Nicht ins Docker-Image kopieren (Build-Kontext klein halten,
+# keine Windows-node_modules oder lokale Daten ins Linux-Image schleppen)
+node_modules
+.next
+out
+data
+.git
+.gitignore
+.env*
+*.log
+*.tsbuildinfo
+coverage
+test
+scripts
+sirup-wandhalter
+.github
+compose*.yaml
+Dockerfile
+.dockerignore
+README.md
+AGENTS.md
+CLAUDE.md
+.cursor
+.vscode

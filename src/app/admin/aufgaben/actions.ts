@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { db, tables } from "@/db";
 import { requireUser } from "@/lib/auth";
-import { nowIso } from "@/lib/format";
+import { nowIso, parseDateInput } from "@/lib/format";
 
 const taskSchema = z.object({
   title: z.string().trim().min(1).max(200),
@@ -21,7 +21,7 @@ export async function createTask(formData: FormData) {
     title: formData.get("title"),
     description: formData.get("description"),
     assignee: formData.get("assignee"),
-    dueDate: formData.get("dueDate"),
+    dueDate: parseDateInput(String(formData.get("dueDate") ?? "")) ?? "",
   });
   db.insert(tables.tasks)
     .values({ ...data, dueDate: data.dueDate || null, createdAt: nowIso() })

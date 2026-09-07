@@ -2,9 +2,10 @@ import Link from "next/link";
 import { asc, desc, eq } from "drizzle-orm";
 import { db, tables } from "@/db";
 import { requireMoneyRole } from "@/lib/auth";
+import { DateField } from "@/components/DateField";
 import { euro, formatDate, today } from "@/lib/format";
 import { btn, btnPrimary, card, input, label, tableClass, td, th } from "@/lib/ui";
-import { addPayment, deletePayment, dunPayment, markPaid, reopenPayment, runAnnualInvoices } from "./actions";
+import { addPayment, deletePayment, dunPayment, markPaid, reopenPayment } from "./actions";
 
 const typeLabels: Record<string, string> = {
   beitrag: "Beitrag",
@@ -81,21 +82,15 @@ export default async function ZahlungenPage({ searchParams }: PageProps<"/admin/
         </div>
       </div>
 
-      {typeof params.lauf === "string" && (
-        <p className="rounded-md bg-green-100 px-4 py-3 text-green-800">
-          Rechnungslauf abgeschlossen: {params.lauf} Rechnung(en) erstellt, {params.uebersprungen ?? 0} Mitglied(er) übersprungen (bereits abgerechnet).
-          PDFs unter <Link href="/admin/schriftverkehr" className="underline">Schriftverkehr</Link>.
-        </p>
-      )}
       {params.ok === "zahlung" && <p className="rounded-md bg-green-100 px-4 py-3 text-green-800">Zahlung verbucht.</p>}
       {params.ok === "posten" && <p className="rounded-md bg-green-100 px-4 py-3 text-green-800">Posten angelegt.</p>}
       {params.ok === "mahnung" && (
         <p className="rounded-md bg-green-100 px-4 py-3 text-green-800">
-          Mahnung erstellt – PDF unter <Link href="/admin/schriftverkehr" className="underline">Schriftverkehr</Link>.
+          Mahnung als Entwurf unter Briefe – Text prüfen, dann PDF erstellen.
         </p>
       )}
       {params.fehler === "eingabe" && <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">Bitte Eingaben prüfen (Mitglied, Betrag).</p>}
-      {params.fehler === "vorlage" && <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">Briefvorlage fehlt – unter Schriftverkehr → Vorlagen anlegen.</p>}
+      {params.fehler === "vorlage" && <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">Briefvorlage fehlt – unter Briefe → Vorlagen anlegen.</p>}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className={card}>
@@ -108,20 +103,10 @@ export default async function ZahlungenPage({ searchParams }: PageProps<"/admin/
         </div>
       </div>
 
-      <section className={`${card} space-y-3`}>
-        <h2 className="text-lg font-semibold">Jahres-Rechnungslauf</h2>
-        <p className="text-sm text-stone-500">
-          Erstellt pro Mitglied mit Garten eine Rechnung (Pacht, Beitrag, Strom, fehlende Arbeitsstunden des Vorjahres, Umlage)
-          samt PDF. Bereits abgerechnete Mitglieder werden übersprungen. Sätze unter Einstellungen.
-        </p>
-        <form action={runAnnualInvoices} className="flex flex-wrap items-end gap-3">
-          <div>
-            <label className={label} htmlFor="runYear">Abrechnungsjahr</label>
-            <input id="runYear" name="year" type="number" defaultValue={year} className={`${input} w-28`} />
-          </div>
-          <button className={btnPrimary}>Rechnungslauf starten</button>
-        </form>
-      </section>
+      <p className="text-sm text-stone-500">
+        Hier die offenen Posten und Eingänge. Jahresrechnungen starten unter{" "}
+        <Link href="/admin/schriftverkehr#rechnungslauf" className="text-green-700 hover:underline">Briefe</Link>.
+      </p>
 
       <section className={`${card} space-y-3`}>
         <h2 className="text-lg font-semibold">Posten manuell anlegen</h2>
@@ -153,7 +138,7 @@ export default async function ZahlungenPage({ searchParams }: PageProps<"/admin/
           </div>
           <div>
             <label className={label} htmlFor="pDue">Fällig am</label>
-            <input id="pDue" name="dueDate" type="date" className={input} />
+            <DateField id="pDue" name="dueDate" />
           </div>
           <div className="sm:col-span-2 lg:col-span-5">
             <label className={label} htmlFor="pDesc">Beschreibung</label>

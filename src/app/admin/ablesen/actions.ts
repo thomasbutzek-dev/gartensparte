@@ -6,7 +6,7 @@ import { asc, eq, gt } from "drizzle-orm";
 import { z } from "zod";
 import { db, tables } from "@/db";
 import { requireUser } from "@/lib/auth";
-import { today } from "@/lib/format";
+import { parseDateInput, today } from "@/lib/format";
 
 const readingSchema = z.object({
   date: z.string().trim().min(1),
@@ -18,7 +18,7 @@ export async function saveReading(gardenId: number, formData: FormData) {
   const user = await requireUser();
   const raw = String(formData.get("value") ?? "").replace(",", ".");
   const parsed = readingSchema.safeParse({
-    date: formData.get("date") || today(),
+    date: parseDateInput(String(formData.get("date") ?? "")) || today(),
     value: raw,
     note: formData.get("note"),
   });
@@ -40,7 +40,8 @@ export async function saveReading(gardenId: number, formData: FormData) {
       .where(gt(tables.gardens.number, garden.number))
       .orderBy(asc(tables.gardens.number))
       .all();
-    const next = candidates.find((g) => g.meterNumber) ?? candidates[0];
+    const real = candidates.filter((g) => g.status !== "entfaellt");
+    const next = real.find((g) => g.meterNumber) ?? real[0];
     if (next) redirect(`/admin/ablesen?nr=${next.number}&ok=1`);
   }
   redirect(`/admin/ablesen?ok=1`);

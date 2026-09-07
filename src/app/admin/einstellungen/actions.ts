@@ -25,15 +25,10 @@ export async function updateSettings(formData: FormData) {
   await requireAdminRole();
   const current = getSettings();
   saveSettings({
-    vereinName: text(formData, "vereinName") || current.vereinName,
-    vereinStrasse: text(formData, "vereinStrasse"),
-    vereinOrt: text(formData, "vereinOrt"),
-    vereinEmail: text(formData, "vereinEmail"),
-    vereinTelefon: text(formData, "vereinTelefon"),
+    ...current,
     bankName: text(formData, "bankName"),
     iban: text(formData, "iban"),
     bic: text(formData, "bic"),
-    vorsitzender: text(formData, "vorsitzender"),
     pachtCentProQm: euroCents(formData, "pachtProQm", current.pachtCentProQm),
     mitgliedsbeitragCents: euroCents(formData, "mitgliedsbeitrag", current.mitgliedsbeitragCents),
     umlageCents: euroCents(formData, "umlage", current.umlageCents),
@@ -43,9 +38,6 @@ export async function updateSettings(formData: FormData) {
     arbeitsstundenSoll: num(formData, "arbeitsstundenSoll", current.arbeitsstundenSoll),
     arbeitsstundenSatzCents: euroCents(formData, "arbeitsstundenSatz", current.arbeitsstundenSatzCents),
     zahlungszielTage: Math.round(num(formData, "zahlungszielTage", current.zahlungszielTage)),
-    startText: text(formData, "startText", 5000),
-    ansprechpartnerText: text(formData, "ansprechpartnerText", 5000),
-    uebernahmeText: text(formData, "uebernahmeText", 5000),
     impressumText: text(formData, "impressumText", 20000),
     datenschutzText: text(formData, "datenschutzText", 20000),
   });

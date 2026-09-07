@@ -1,0 +1,35 @@
+# Betrieb auf dem VPS hinter Traefik (Hostinger-Vorlage "Docker + Traefik").
+# Das Image wird per GitHub Actions gebaut (.github/workflows/docker.yml)
+# und nach ghcr.io geschoben; der Server zieht es nur noch.
+#
+# Nötige Variablen (Docker Manager "Environment" oder .env):
+#   SITE_DOMAIN=gartensparte.example.de
+#   ADMIN_START_PASSWORD=geheim        (nur beim allerersten Start relevant)
+#   IMAGE_TAG=latest                   (optional)
+name: gartensparte
+
+services:
+  web:
+    image: ghcr.io/thomasbutzek-dev/gartensparte:${IMAGE_TAG:-latest}
+    pull_policy: always
+    restart: unless-stopped
+    init: true
+    expose:
+      - "3000"
+    volumes:
+      # SQLite-Datenbank, Uploads, erzeugte PDFs. Sicherung = dieses Volume kopieren.
+      - gartensparte_data:/app/data
+    environment:
+      ADMIN_START_PASSWORD: ${ADMIN_START_PASSWORD:-gartensparte-start}
+    security_opt:
+      - no-new-privileges:true
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.gartensparte.rule: Host(`${SITE_DOMAIN:?SITE_DOMAIN fehlt}`)
+      traefik.http.routers.gartensparte.entrypoints: websecure
+      traefik.http.routers.gartensparte.tls: "true"
+      traefik.http.routers.gartensparte.tls.certresolver: letsencrypt
+      traefik.http.services.gartensparte.loadbalancer.server.port: "3000"
+
+volumes:
+  gartensparte_data:
