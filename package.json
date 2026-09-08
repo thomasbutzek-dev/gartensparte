@@ -9,7 +9,7 @@
     "lint": "eslint",
     "test": "vitest run",
     "db:generate": "drizzle-kit generate",
-    "postinstall": "node -e \"require('fs').copyFileSync('node_modules/pdfjs-dist/build/pdf.worker.min.mjs','public/pdf.worker.min.mjs')\""
+    "postinstall": "node -e \"const fs=require('fs');const s='node_modules/pdfjs-dist/build/pdf.worker.min.mjs';if(!fs.existsSync(s))process.exit(0);fs.mkdirSync('public',{recursive:true});fs.copyFileSync(s,'public/pdf.worker.min.mjs')\""
   },
   "dependencies": {
     "@tiptap/extension-link": "^3.31.3",
