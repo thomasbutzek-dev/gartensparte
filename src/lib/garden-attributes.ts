@@ -44,17 +44,18 @@ export function gardenAttributeOptions() {
   return [...defaultGardenAttributes, ...uniqueExtras(defaultGardenAttributes, [...settings.gardenAttributes, ...used])];
 }
 
-export function rememberGardenAttribute(value: string) {
+export function rememberGardenAttribute(value: string): "ok" | "leer" | "bekannt" {
   const trimmed = value.trim().slice(0, 50);
-  if (!trimmed) return;
+  if (!trimmed) return "leer";
   const settings = getSettings();
   const known = new Set([
     ...defaultGardenAttributes.map((item) => item.value),
     ...defaultGardenAttributes.map((item) => item.label),
     ...settings.gardenAttributes,
   ]);
-  if (known.has(trimmed)) return;
+  if (known.has(trimmed)) return "bekannt";
   saveSettings({ ...settings, gardenAttributes: [...settings.gardenAttributes, trimmed] });
+  return "ok";
 }
 
 export function collectGardenAttributes(formData: FormData): string[] {

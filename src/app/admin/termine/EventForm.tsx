@@ -1,4 +1,5 @@
 import { DateTimeField } from "@/components/DateField";
+import RichTextEditor from "@/components/RichTextEditor";
 import { btnPrimary, input, label } from "@/lib/ui";
 
 type EventValues = {
@@ -33,7 +34,7 @@ export default function EventForm({ values = {}, submitLabel }: { values?: Event
       </div>
       <div>
         <label className={label} htmlFor="description">Beschreibung</label>
-        <textarea id="description" name="description" rows={4} defaultValue={values.description} className={input} />
+        <RichTextEditor id="description" name="description" defaultValue={values.description} />
       </div>
       <div>
         <label className={label} htmlFor="status">Sichtbarkeit</label>

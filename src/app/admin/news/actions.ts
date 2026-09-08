@@ -7,10 +7,11 @@ import { z } from "zod";
 import { db, tables } from "@/db";
 import { requireUser } from "@/lib/auth";
 import { nowIso } from "@/lib/format";
+import { isRichTextEmpty, readRichText } from "@/lib/rich-text";
 
 const newsSchema = z.object({
   title: z.string().trim().min(1).max(200),
-  body: z.string().trim().min(1).max(20000),
+  body: z.string().max(20000),
   status: z.enum(["entwurf", "veroeffentlicht"]),
   pinned: z.boolean(),
 });
@@ -18,7 +19,7 @@ const newsSchema = z.object({
 function parseNews(formData: FormData) {
   return newsSchema.parse({
     title: formData.get("title"),
-    body: formData.get("body"),
+    body: readRichText(formData, "body"),
     status: formData.get("status") ?? "entwurf",
     pinned: formData.get("pinned") === "1",
   });
@@ -33,6 +34,7 @@ function revalidate() {
 export async function createNews(formData: FormData) {
   await requireUser();
   const data = parseNews(formData);
+  if (isRichTextEmpty(data.body)) redirect("/admin/news?fehler=text");
   db.insert(tables.news)
     .values({ ...data, createdAt: nowIso(), publishedAt: data.status === "veroeffentlicht" ? nowIso() : null })
     .run();
@@ -43,6 +45,7 @@ export async function createNews(formData: FormData) {
 export async function updateNews(newsId: number, formData: FormData) {
   await requireUser();
   const data = parseNews(formData);
+  if (isRichTextEmpty(data.body)) redirect(`/admin/news/${newsId}?fehler=text`);
   const existing = db.select().from(tables.news).where(eq(tables.news.id, newsId)).get();
   db.update(tables.news)
     .set({

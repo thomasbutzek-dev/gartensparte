@@ -42,3 +42,9 @@ next-env.d.ts
 
 # app data (SQLite, uploads, generated PDFs)
 /data/
+
+# von postinstall aus pdfjs-dist kopiert
+/public/pdf.worker.min.mjs
+
+# gehört nicht zur Vereinswebsite
+/sirup-wandhalter/

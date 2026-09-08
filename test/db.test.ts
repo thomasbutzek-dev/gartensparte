@@ -129,7 +129,8 @@ describe("Garten-Merkmale", () => {
     formData.append("attribute", "verwahrlost");
     formData.append("newAttribute", "Wildwuchs");
     expect(collectGardenAttributes(formData)).toEqual(["verwahrlost", "Wildwuchs"]);
-    rememberGardenAttribute("Wildwuchs");
+    expect(rememberGardenAttribute("Wildwuchs")).toBe("bekannt");
+    expect(rememberGardenAttribute("")).toBe("leer");
     expect(gardenAttributeOptions().some((item) => item.value === "Wildwuchs")).toBe(true);
   });
 });

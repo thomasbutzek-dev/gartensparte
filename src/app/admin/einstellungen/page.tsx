@@ -1,3 +1,4 @@
+import RichTextEditor from "@/components/RichTextEditor";
 import { requireAdminRole } from "@/lib/auth";
 import { getSettings } from "@/lib/settings";
 import { btnPrimary, card, input, label } from "@/lib/ui";
@@ -94,11 +95,11 @@ export default async function EinstellungenPage({ searchParams }: PageProps<"/ad
           </p>
           <div>
             <label className={label} htmlFor="impressumText">Impressum</label>
-            <textarea id="impressumText" name="impressumText" rows={5} defaultValue={s.impressumText} className={input} />
+            <RichTextEditor id="impressumText" name="impressumText" defaultValue={s.impressumText} minHeightClass="min-h-40" />
           </div>
           <div>
             <label className={label} htmlFor="datenschutzText">Datenschutzerklärung</label>
-            <textarea id="datenschutzText" name="datenschutzText" rows={5} defaultValue={s.datenschutzText} className={input} />
+            <RichTextEditor id="datenschutzText" name="datenschutzText" defaultValue={s.datenschutzText} minHeightClass="min-h-40" />
           </div>
         </section>
 

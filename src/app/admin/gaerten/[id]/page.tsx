@@ -1,4 +1,5 @@
 import FileDropField from "@/components/FileDropField";
+import FilePreview from "@/components/FilePreview";
 import GardenMerkmaleFields from "@/components/GardenMerkmaleFields";
 import Link from "next/link";
 import { gardenCategoryLabel, gardenCategoryOptions } from "@/lib/categories";
@@ -236,19 +237,17 @@ export default async function GartenAktePage({ params, searchParams }: PageProps
         {/* Dokumente */}
         <section className={`${card} space-y-4`}>
           <h2 className="text-lg font-semibold">Dokumente</h2>
-          <ul className="space-y-2 text-sm">
+          <ul className="space-y-3 text-sm">
             {documents.map((doc) => (
-              <li key={doc.id} className="flex flex-wrap items-center justify-between gap-2">
-                <span>
-                  <a href={`/api/garten-dokumente/${doc.id}`} target="_blank" className="text-green-800 hover:underline">
-                    {doc.originalName}
-                  </a>{" "}
-                  <span className="text-xs text-stone-400">
-                    {gardenCategoryLabel(doc.category)} · {formatDate(doc.uploadedAt)}
-                  </span>
-                </span>
+              <li key={doc.id} className="flex items-start justify-between gap-3">
+                <FilePreview
+                  href={`/api/garten-dokumente/${doc.id}`}
+                  name={doc.originalName}
+                  mimeType={doc.mimeType}
+                  meta={`${gardenCategoryLabel(doc.category)} · ${formatDate(doc.uploadedAt)}`}
+                />
                 <form action={deleteGardenDocument.bind(null, doc.id, garden.id)}>
-                  <button className="text-xs text-red-700 hover:underline">Löschen</button>
+                  <button className="min-h-11 text-xs text-red-700 hover:underline">Löschen</button>
                 </form>
               </li>
             ))}
@@ -262,7 +261,7 @@ export default async function GartenAktePage({ params, searchParams }: PageProps
                   required
                   accept="application/pdf,image/jpeg,image/png,image/webp,.docx,.xlsx"
                   label="Datei hierher ziehen oder klicken"
-                  hint="PDF, Foto oder Office-Datei, höchstens 15 MB"
+                  hint="Fotos werden automatisch verkleinert. PDF, Foto oder Office-Datei, höchstens 15 MB"
                 />
               </div>
               <div>

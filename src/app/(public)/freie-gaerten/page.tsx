@@ -6,6 +6,7 @@ import { euro } from "@/lib/format";
 import { getMapBackgroundFile, parsePolygon } from "@/lib/map";
 import { btnPrimary, card, input, label, tableClass, td, th } from "@/lib/ui";
 import GardenMap from "@/components/GardenMap";
+import RichText from "@/components/RichText";
 import SiteContainer from "@/components/SiteContainer";
 import SpamGuard from "@/components/SpamGuard";
 import { submitApplication } from "../actions";
@@ -32,7 +33,7 @@ export default async function FreieGaertenPage({ searchParams }: PageProps<"/fre
   return (
     <SiteContainer className="space-y-8 py-10">
       <h1 className="text-2xl font-bold">Freie Gärten</h1>
-      <p className="max-w-2xl whitespace-pre-line text-stone-600">{settings.uebernahmeText}</p>
+      <RichText html={settings.uebernahmeText} className="max-w-2xl text-stone-600" />
 
       {freeGardens.length === 0 ? (
         <p className={card}>

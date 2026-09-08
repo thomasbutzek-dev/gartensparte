@@ -12,6 +12,7 @@ import GardenHeroArt from "@/components/GardenHeroArt";
 import GardenScenes from "@/components/GardenScenes";
 import PublicMap from "@/components/PublicMap";
 import ImpressionStrip from "@/components/ImpressionStrip";
+import RichText from "@/components/RichText";
 
 export default function StartPage() {
   const settings = getSettings();
@@ -40,24 +41,24 @@ export default function StartPage() {
         <div className={`relative ${settings.heroFile ? photoWash : "bg-gradient-to-br from-lime-600 via-sparte to-sparte-deep"}`}>
           {!settings.heroFile ? <GardenHeroArt /> : null}
           <SiteContainer className="relative flex min-h-[28rem] flex-col justify-end py-14 md:min-h-[32rem]">
-            <div className={`max-w-2xl ${settings.heroFile ? `-mx-4 px-4 pt-20 ${photoScrim}` : ""}`}>
+            <div className={`max-w-2xl ${settings.heroFile ? `-mx-4 px-4 pb-12 pt-20 ${photoScrim}` : ""}`}>
               {settings.logoFile ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src="/api/logo" alt="" className="mb-5 h-16 w-16 rounded-full bg-white object-contain p-1 shadow" />
               ) : null}
               <h1 className={`text-4xl font-bold tracking-tight md:text-5xl ${photoText}`}>{settings.vereinName}</h1>
               {settings.slogan ? <p className={`mt-3 text-lg ${photoMuted}`}>{settings.slogan}</p> : null}
-              <p className={`mt-4 max-w-xl whitespace-pre-line ${photoMuted}`}>{settings.startText}</p>
-              <div className="mt-7 flex flex-wrap gap-3">
+              <RichText html={settings.startText} tone="photo" className={`mt-4 max-w-xl ${photoMuted}`} />
+              <div className="mt-5 flex flex-wrap items-center gap-3">
                 <Link
                   href="/freie-gaerten"
-                  className="rounded-md bg-white px-4 py-2.5 font-medium text-sparte-deep hover:bg-lime-50"
+                  className="inline-flex items-center rounded-md bg-white px-4 py-2.5 font-medium text-sparte-deep hover:bg-lime-50"
                 >
                   {freeGardenCtaLabel(occupancy)}
                 </Link>
                 <Link
                   href="/kontakt"
-                  className="rounded-md border border-white/60 px-4 py-2.5 font-medium text-white hover:bg-white/10"
+                  className="inline-flex items-center rounded-md border border-white/60 px-4 py-2.5 font-medium text-white hover:bg-white/10"
                 >
                   Kontakt
                 </Link>
@@ -116,7 +117,7 @@ export default function StartPage() {
           <section className={card}>
             <h2 className="mb-4 text-lg font-semibold">Vorstand</h2>
             {board.length === 0 ? (
-              <p className="whitespace-pre-line text-sm text-stone-600">{boardExtraText(settings)}</p>
+              <RichText html={boardExtraText(settings)} className="text-sm text-stone-600" />
             ) : (
               <ul className="space-y-3">
                 {board.map((member) => (
@@ -158,7 +159,7 @@ export default function StartPage() {
             ) : (
               <p className="text-sm text-stone-500">Die Anschrift wird noch ergänzt.</p>
             )}
-            {settings.directionsText ? <p className="mt-3 whitespace-pre-line text-sm text-stone-600">{settings.directionsText}</p> : null}
+            {settings.directionsText ? <RichText html={settings.directionsText} className="mt-3 text-sm text-stone-600" /> : null}
             {hasMapPoint(settings) && mapsUrl && osmEmbedUrl(settings) ? (
               <PublicMap embedUrl={osmEmbedUrl(settings)!} pageUrl={mapsUrl} />
             ) : mapsUrl ? (

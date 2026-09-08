@@ -29,6 +29,10 @@ ENV NODE_ENV=production \
 COPY --from=build /app/.next/standalone ./
 COPY --from=build /app/.next/static ./.next/static
 COPY --from=build /app/public ./public
+COPY --from=deps /app/node_modules/pdfjs-dist/build/pdf.worker.min.mjs ./public/pdf.worker.min.mjs
+# sharp liegt außerhalb des Next-Bundles (native Binaries)
+COPY --from=deps /app/node_modules/sharp ./node_modules/sharp
+COPY --from=deps /app/node_modules/@img ./node_modules/@img
 # Migrationen werden beim Start angewendet
 COPY --from=build /app/src/db/migrations ./src/db/migrations
 

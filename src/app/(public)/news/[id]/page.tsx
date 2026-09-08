@@ -6,6 +6,7 @@ import { and, eq } from "drizzle-orm";
 import { db, tables } from "@/db";
 import { formatDate } from "@/lib/format";
 import { badge } from "@/lib/ui";
+import RichText from "@/components/RichText";
 import SiteContainer from "@/components/SiteContainer";
 
 export default async function NewsDetailPage({ params }: PageProps<"/news/[id]">) {
@@ -28,7 +29,7 @@ export default async function NewsDetailPage({ params }: PageProps<"/news/[id]">
         {formatDate(item.publishedAt)}
         {item.pinned ? <span className={`${badge} ml-2 bg-amber-100 text-amber-900`}>Oben gehalten</span> : null}
       </p>
-      <div className="whitespace-pre-line leading-relaxed">{item.body}</div>
+      <RichText html={item.body} className="leading-relaxed" />
     </article>
     </SiteContainer>
   );

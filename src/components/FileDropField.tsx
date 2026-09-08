@@ -12,7 +12,7 @@ export default function FileDropField({
   required = false,
   autoSubmit = false,
   label = "Datei hierher ziehen oder klicken",
-  hint = "JPG, PNG oder WebP, höchstens 15 MB",
+  hint = "Fotos werden automatisch verkleinert. JPG, PNG oder WebP, höchstens 15 MB",
 }: {
   name?: string;
   accept?: string;

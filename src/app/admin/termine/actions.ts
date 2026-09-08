@@ -7,13 +7,14 @@ import { z } from "zod";
 import { db, tables } from "@/db";
 import { requireUser } from "@/lib/auth";
 import { parseDateTimeInput } from "@/lib/format";
+import { readRichText } from "@/lib/rich-text";
 
 const eventSchema = z.object({
   title: z.string().trim().min(1).max(200),
   date: z.string().trim().min(1),
   endDate: z.string().trim().default(""),
   location: z.string().trim().max(200).default(""),
-  description: z.string().trim().max(5000).default(""),
+  description: z.string().trim().max(8000).default(""),
   status: z.enum(["entwurf", "veroeffentlicht"]),
 });
 
@@ -23,7 +24,7 @@ function parseEvent(formData: FormData) {
     date: parseDateTimeInput(String(formData.get("date") ?? "")) ?? "",
     endDate: parseDateTimeInput(String(formData.get("endDate") ?? "")) ?? "",
     location: formData.get("location"),
-    description: formData.get("description"),
+    description: readRichText(formData, "description", 8000),
     status: formData.get("status") ?? "entwurf",
   });
 }

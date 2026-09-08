@@ -5,6 +5,7 @@ import { asc, eq } from "drizzle-orm";
 import { db, tables } from "@/db";
 import { formatDateTime, today } from "@/lib/format";
 import { card } from "@/lib/ui";
+import RichText from "@/components/RichText";
 import SiteContainer from "@/components/SiteContainer";
 
 export const metadata: Metadata = { title: "Termine" };
@@ -32,7 +33,7 @@ export default function TerminePage() {
               {event.endDate ? ` bis ${formatDateTime(event.endDate)}` : ""}
               {event.location ? ` · ${event.location}` : ""}
             </p>
-            {event.description && <p className="mt-2 whitespace-pre-line text-sm">{event.description}</p>}
+            {event.description ? <RichText html={event.description} className="mt-2 text-sm" /> : null}
           </article>
         ))}
       </section>

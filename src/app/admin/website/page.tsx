@@ -1,5 +1,6 @@
 import FileDropField from "@/components/FileDropField";
 import LocationEditor from "@/components/LocationEditor";
+import RichTextEditor from "@/components/RichTextEditor";
 import { requireUser } from "@/lib/auth";
 import { hasMapPreviewFile } from "@/lib/map-preview";
 import { getSettings } from "@/lib/settings";
@@ -146,7 +147,7 @@ export default async function WebsitePage({ searchParams }: PageProps<"/admin/we
         </div>
         <div>
           <label className={label} htmlFor="startText">Begrüßungstext</label>
-          <textarea id="startText" name="startText" rows={4} defaultValue={settings.startText} className={input} />
+          <RichTextEditor id="startText" name="startText" defaultValue={settings.startText} />
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
@@ -165,35 +166,16 @@ export default async function WebsitePage({ searchParams }: PageProps<"/admin/we
         </div>
         <div>
           <label className={label} htmlFor="directionsText">Anfahrt / Lage</label>
-          <textarea
-            id="directionsText"
-            name="directionsText"
-            rows={3}
-            defaultValue={settings.directionsText}
-            className={input}
-            placeholder="z.B. Eingang an der Musterstraße, Parkplatz am Vereinsheim."
-          />
+          <RichTextEditor id="directionsText" name="directionsText" defaultValue={settings.directionsText} />
         </div>
         <div>
           <label className={label} htmlFor="ansprechpartnerText">Zusatztext Vorstand</label>
-          <textarea
-            id="ansprechpartnerText"
-            name="ansprechpartnerText"
-            rows={3}
-            defaultValue={settings.ansprechpartnerText}
-            className={input}
-          />
+          <RichTextEditor id="ansprechpartnerText" name="ansprechpartnerText" defaultValue={settings.ansprechpartnerText} />
           <p className="mt-1 text-xs text-stone-500">Nur Zusatz. Sprechzeiten nicht noch einmal eintragen.</p>
         </div>
         <div>
           <label className={label} htmlFor="uebernahmeText">Freie Gärten – Ablauf der Übernahme</label>
-          <textarea
-            id="uebernahmeText"
-            name="uebernahmeText"
-            rows={3}
-            defaultValue={settings.uebernahmeText}
-            className={input}
-          />
+          <RichTextEditor id="uebernahmeText" name="uebernahmeText" defaultValue={settings.uebernahmeText} />
         </div>
         <div className="grid gap-4 sm:grid-cols-3">
           {([1, 2, 3] as const).map((slot) => (

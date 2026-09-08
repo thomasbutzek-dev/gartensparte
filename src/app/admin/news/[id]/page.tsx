@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { db, tables } from "@/db";
 import { requireUser } from "@/lib/auth";
 import NewsPinnedField from "@/components/NewsPinnedField";
+import RichTextEditor from "@/components/RichTextEditor";
 import { btn, btnPrimary, card, input, label } from "@/lib/ui";
 import { updateNews } from "../actions";
 
@@ -26,7 +27,7 @@ export default async function NewsBearbeitenPage({ params }: PageProps<"/admin/n
         </div>
         <div>
           <label className={label} htmlFor="body">Text *</label>
-          <textarea id="body" name="body" rows={12} required defaultValue={item.body} className={input} />
+          <RichTextEditor id="body" name="body" defaultValue={item.body} minHeightClass="min-h-48" />
         </div>
         <div>
           <label className={label} htmlFor="status">Sichtbarkeit</label>

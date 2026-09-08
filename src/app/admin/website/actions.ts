@@ -11,6 +11,7 @@ import { saveImageUpload } from "@/lib/files";
 import { nowIso } from "@/lib/format";
 import { geocodeAddress } from "@/lib/geocode";
 import { refreshMapPreview } from "@/lib/map-preview";
+import { readRichText } from "@/lib/rich-text";
 import { getSettings, saveSettings } from "@/lib/settings";
 
 function text(formData: FormData, key: string, max = 2000): string {
@@ -47,12 +48,12 @@ export async function updateAppearance(formData: FormData) {
     foundingYear: text(formData, "foundingYear", 10),
     areaLabel: text(formData, "areaLabel", 80),
     sprechzeiten: text(formData, "sprechzeiten", 500),
-    directionsText: text(formData, "directionsText", 2000),
-    startText: text(formData, "startText", 5000) || current.startText,
+    directionsText: readRichText(formData, "directionsText", 4000),
+    startText: readRichText(formData, "startText", 8000) || current.startText,
     ansprechpartnerText: formData.has("ansprechpartnerText")
-      ? text(formData, "ansprechpartnerText", 5000)
+      ? readRichText(formData, "ansprechpartnerText", 8000)
       : current.ansprechpartnerText,
-    uebernahmeText: formData.has("uebernahmeText") ? text(formData, "uebernahmeText", 5000) : current.uebernahmeText,
+    uebernahmeText: formData.has("uebernahmeText") ? readRichText(formData, "uebernahmeText", 8000) : current.uebernahmeText,
     scene1Title: formData.has("scene1Title") ? text(formData, "scene1Title", 80) : current.scene1Title,
     scene1Text: formData.has("scene1Text") ? text(formData, "scene1Text", 300) : current.scene1Text,
     scene2Title: formData.has("scene2Title") ? text(formData, "scene2Title", 80) : current.scene2Title,

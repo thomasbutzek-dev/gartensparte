@@ -2,16 +2,15 @@ import Link from "next/link";
 import { asc, isNull, eq } from "drizzle-orm";
 import { db, tables } from "@/db";
 import { requireUser } from "@/lib/auth";
-import { gardenAttributeLabel, gardenAttributeOptions, gardenHasAttribute, parseGardenAttributes } from "@/lib/garden-attributes";
+import { gardenAttributeLabel, parseGardenAttributes } from "@/lib/garden-attributes";
 import { badge, btn, btnPrimary, card, gardenStatusColors, gardenStatusLabel, gardenStatusLabels, input, label, tableClass, td, th } from "@/lib/ui";
 import { gardenCountsFrom } from "@/lib/site";
-import { createGarden, setGardenCount } from "./actions";
+import { createGarden, createGardenAttribute, setGardenCount } from "./actions";
 
 export default async function GaertenPage({ searchParams }: PageProps<"/admin/gaerten">) {
   await requireUser();
   const params = await searchParams;
   const statusFilter = typeof params.status === "string" ? params.status : "";
-  const attributeFilter = typeof params.merkmal === "string" ? params.merkmal : "";
   const search = typeof params.suche === "string" ? params.suche.toLowerCase() : "";
 
   const gardens = db.select().from(tables.gardens).orderBy(asc(tables.gardens.number)).all();
@@ -30,7 +29,6 @@ export default async function GaertenPage({ searchParams }: PageProps<"/admin/ga
 
   const filtered = gardens
     .filter((g) => !statusFilter || g.status === statusFilter)
-    .filter((g) => !attributeFilter || gardenHasAttribute(g.attributes, attributeFilter))
     .filter((g) => {
       if (!search) return true;
       const tenant = tenantByGarden.get(g.id);
@@ -76,6 +74,15 @@ export default async function GaertenPage({ searchParams }: PageProps<"/admin/ga
       {params.fehler === "vergeben" && (
         <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">Diese Nummer gibt es schon.</p>
       )}
+      {params.ok === "merkmal" && (
+        <p className="rounded-md bg-green-100 px-4 py-3 text-green-800">Merkmal angelegt. Ihr könnt es in der Gartenakte anhaken.</p>
+      )}
+      {params.ok === "merkmal-da" && (
+        <p className="rounded-md bg-green-100 px-4 py-3 text-green-800">Das Merkmal gibt es schon. Ihr findet es in der Gartenakte.</p>
+      )}
+      {params.fehler === "merkmal" && (
+        <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">Bitte einen Namen für das Merkmal eingeben.</p>
+      )}
       <section className={`${card} space-y-3`}>
         <h2 className="text-lg font-semibold">Anzahl der Gärten</h2>
         <p className="text-sm text-stone-500">
@@ -103,13 +110,22 @@ export default async function GaertenPage({ searchParams }: PageProps<"/admin/ga
         Nummern, die es historisch nie gab, in der Akte auf „Nicht vergeben“ setzen – dann zählen sie nicht als frei.
         Fehlt eine einzelne Nummer, hier anlegen.
       </p>
-      <form action={createGarden} className="flex flex-wrap items-end gap-3">
-        <div>
-          <label className={label} htmlFor="newNumber">Eine Nummer anlegen</label>
-          <input id="newNumber" name="number" inputMode="numeric" required className={`${input} w-32`} placeholder="z.B. 107" />
-        </div>
-        <button className={btn}>Anlegen</button>
-      </form>
+      <div className="flex flex-wrap items-end gap-6">
+        <form action={createGarden} className="flex flex-wrap items-end gap-3">
+          <div>
+            <label className={label} htmlFor="newNumber">Eine Nummer anlegen</label>
+            <input id="newNumber" name="number" inputMode="numeric" required className={`${input} w-32`} placeholder="z.B. 107" />
+          </div>
+          <button className={btn}>Anlegen</button>
+        </form>
+        <form action={createGardenAttribute} className="flex flex-wrap items-end gap-3">
+          <div>
+            <label className={label} htmlFor="newMerkmal">Ein Merkmal anlegen</label>
+            <input id="newMerkmal" name="merkmal" required maxLength={50} className={`${input} w-48`} placeholder="z.B. Wildwuchs" />
+          </div>
+          <button className={btn}>Anlegen</button>
+        </form>
+      </div>
       <form className="flex flex-wrap items-center gap-3">
         <input
           name="suche"
@@ -118,15 +134,9 @@ export default async function GaertenPage({ searchParams }: PageProps<"/admin/ga
           className="rounded-md border border-stone-300 bg-white px-3 py-2 text-sm"
         />
         <select name="status" defaultValue={statusFilter} className="rounded-md border border-stone-300 bg-white px-3 py-2 text-sm">
-          <option value="">Alle Status</option>
+          <option value="">Status</option>
           {Object.entries(gardenStatusLabels).map(([value, text]) => (
             <option key={value} value={value}>{text}</option>
-          ))}
-        </select>
-        <select name="merkmal" defaultValue={attributeFilter} className="rounded-md border border-stone-300 bg-white px-3 py-2 text-sm">
-          <option value="">Alle Merkmale</option>
-          {gardenAttributeOptions().map((item) => (
-            <option key={item.value} value={item.value}>{item.label}</option>
           ))}
         </select>
         <button className={btn}>Filtern</button>

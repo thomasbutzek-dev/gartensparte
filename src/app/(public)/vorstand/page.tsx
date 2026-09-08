@@ -5,6 +5,7 @@ import Link from "next/link";
 import { boardExtraText, getSettings, officeHoursLabel } from "@/lib/settings";
 import { listBoardMembers } from "@/lib/site";
 import { card } from "@/lib/ui";
+import RichText from "@/components/RichText";
 import SiteContainer from "@/components/SiteContainer";
 
 export const metadata: Metadata = { title: "Vorstand & Ansprechpartner" };
@@ -51,7 +52,7 @@ export default function VorstandPage() {
 
       {boardExtraText(settings) ? (
         <div className={card}>
-          <p className="whitespace-pre-line leading-relaxed">{boardExtraText(settings)}</p>
+          <RichText html={boardExtraText(settings)} className="leading-relaxed" />
         </div>
       ) : null}
 

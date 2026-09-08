@@ -4,6 +4,7 @@ import { db, tables } from "@/db";
 import { requireUser } from "@/lib/auth";
 import { formatDate } from "@/lib/format";
 import NewsPinnedField from "@/components/NewsPinnedField";
+import RichTextEditor from "@/components/RichTextEditor";
 import { badge, btnPrimary, card, input, label, tableClass, td, th } from "@/lib/ui";
 import { createNews, deleteNews, toggleNewsStatus } from "./actions";
 
@@ -19,6 +20,9 @@ export default async function AdminNewsPage({ searchParams }: PageProps<"/admin/
         Meldungen für die Website. Termine (Versammlung, Arbeitseinsatz) stehen extra unter Termine. Ein Entwurf ist nur hier sichtbar. Wichtige Dinge könnt ihr oben halten, dann bleiben sie vor neueren Meldungen.
       </p>
       {params.ok && <p className="rounded-md bg-green-100 px-4 py-3 text-green-800">Gespeichert.</p>}
+      {params.fehler === "text" && (
+        <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">Bitte einen Text zur Meldung schreiben.</p>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_24rem]">
         <div className={card}>
@@ -75,7 +79,7 @@ export default async function AdminNewsPage({ searchParams }: PageProps<"/admin/
           </div>
           <div>
             <label className={label} htmlFor="body">Text *</label>
-            <textarea id="body" name="body" rows={8} required className={input} />
+            <RichTextEditor id="body" name="body" />
           </div>
           <div>
             <label className={label} htmlFor="status">Sichtbarkeit</label>

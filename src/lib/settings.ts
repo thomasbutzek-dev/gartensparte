@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import { db, tables } from "@/db";
+import { looksLikeHtml, sanitizeRichText } from "@/lib/rich-text";
 
 export type VereinsSettings = {
   vereinName: string;
@@ -155,6 +156,12 @@ export function boardExtraText(settings: VereinsSettings): string {
   const raw = settings.ansprechpartnerText.trim();
   if (!raw || raw === oldBoardDefault) {
     return defaultSettings.ansprechpartnerText;
+  }
+  if (looksLikeHtml(raw)) {
+    return sanitizeRichText(raw)
+      .replace(/<p[^>]*>\s*Vorstand\s*<\/p>/i, "")
+      .replace(/<p[^>]*>\s*Sprechzeiten[\s\S]*?<\/p>/gi, "")
+      .trim();
   }
   return raw
     .split("\n")

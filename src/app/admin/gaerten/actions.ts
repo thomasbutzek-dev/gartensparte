@@ -12,7 +12,7 @@ import { nowIso, parseDateInput, today } from "@/lib/format";
 import { categoryFromForm, rememberGardenCategory } from "@/lib/categories";
 import { saveUpload } from "@/lib/files";
 import { applyGardenCount, parseGardenCount, removeGarden } from "@/lib/gardens";
-import { collectGardenAttributes } from "@/lib/garden-attributes";
+import { collectGardenAttributes, rememberGardenAttribute } from "@/lib/garden-attributes";
 
 const gardenSchema = z.object({
   sizeSqm: z.coerce.number().min(0).max(100000).optional(),
@@ -124,6 +124,16 @@ export async function createGarden(formData: FormData) {
   revalidatePath("/admin/gaerten");
   if (created) redirect(`/admin/gaerten/${created.id}?ok=angelegt`);
   redirect("/admin/gaerten?ok=angelegt");
+}
+
+export async function createGardenAttribute(formData: FormData) {
+  await requireUser();
+  const result = rememberGardenAttribute(String(formData.get("merkmal") ?? ""));
+  revalidatePath("/admin/gaerten");
+  revalidatePath("/admin/gaerten/erfassen");
+  if (result === "leer") redirect("/admin/gaerten?fehler=merkmal");
+  if (result === "bekannt") redirect("/admin/gaerten?ok=merkmal-da");
+  redirect("/admin/gaerten?ok=merkmal");
 }
 
 /** Schnellerfassung: speichern und zum nächsten Garten springen. */

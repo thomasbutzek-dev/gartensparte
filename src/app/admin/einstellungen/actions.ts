@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdminRole } from "@/lib/auth";
+import { readRichText } from "@/lib/rich-text";
 import { getSettings, saveSettings } from "@/lib/settings";
 
 function text(formData: FormData, key: string, max = 500): string {
@@ -38,8 +39,8 @@ export async function updateSettings(formData: FormData) {
     arbeitsstundenSoll: num(formData, "arbeitsstundenSoll", current.arbeitsstundenSoll),
     arbeitsstundenSatzCents: euroCents(formData, "arbeitsstundenSatz", current.arbeitsstundenSatzCents),
     zahlungszielTage: Math.round(num(formData, "zahlungszielTage", current.zahlungszielTage)),
-    impressumText: text(formData, "impressumText", 20000),
-    datenschutzText: text(formData, "datenschutzText", 20000),
+    impressumText: readRichText(formData, "impressumText", 20000),
+    datenschutzText: readRichText(formData, "datenschutzText", 20000),
   });
   revalidatePath("/", "layout");
   redirect("/admin/einstellungen?ok=1");

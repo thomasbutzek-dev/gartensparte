@@ -3,6 +3,7 @@ import { db, tables } from "@/db";
 import { requireUser } from "@/lib/auth";
 import { formatDate } from "@/lib/format";
 import FileDropField from "@/components/FileDropField";
+import FilePreview from "@/components/FilePreview";
 import { publicCategoryLabel, publicCategoryOptions } from "@/lib/categories";
 import { badge, btnPrimary, card, input, label, tableClass, td, th } from "@/lib/ui";
 import { deleteDocument, toggleDocumentPublic, uploadDocument } from "./actions";
@@ -53,7 +54,7 @@ export default async function AdminDokumentePage({ searchParams }: PageProps<"/a
             required
             accept="application/pdf,image/jpeg,image/png,image/webp,.docx,.xlsx"
             label="Datei hierher ziehen oder klicken"
-            hint="PDF, JPG, PNG, WebP, DOCX oder XLSX, höchstens 15 MB"
+            hint="Fotos werden automatisch verkleinert. PDF, JPG, PNG, WebP, DOCX oder XLSX, höchstens 15 MB"
           />
         </div>
       </form>
@@ -73,10 +74,12 @@ export default async function AdminDokumentePage({ searchParams }: PageProps<"/a
             {docs.map((doc) => (
               <tr key={doc.id}>
                 <td className={td}>
-                  <a href={`/api/dokumente/${doc.id}`} target="_blank" className="font-medium text-green-800 hover:underline">
-                    {doc.title}
-                  </a>
-                  <div className="text-xs text-stone-400">{doc.originalName}</div>
+                  <FilePreview
+                    href={`/api/dokumente/${doc.id}`}
+                    name={doc.title}
+                    mimeType={doc.mimeType}
+                    meta={doc.originalName}
+                  />
                 </td>
                 <td className={td}>{publicCategoryLabel(doc.category)}</td>
                 <td className={td}>

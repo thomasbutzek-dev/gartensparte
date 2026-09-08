@@ -6,6 +6,7 @@ import { db, tables } from "@/db";
 import { publicCategoryGroup } from "@/lib/categories";
 import { formatDate } from "@/lib/format";
 import { card } from "@/lib/ui";
+import FilePreview from "@/components/FilePreview";
 import SiteContainer from "@/components/SiteContainer";
 
 export const metadata: Metadata = { title: "Dokumente" };
@@ -33,11 +34,13 @@ export default function DokumentePage() {
           <h2 className="mb-3 text-lg font-semibold">{group}</h2>
           <ul className="space-y-2">
             {items.map((doc) => (
-              <li key={doc.id} className="flex flex-wrap items-baseline justify-between gap-2">
-                <a href={`/api/dokumente/${doc.id}`} className="text-green-800 hover:underline">
-                  {doc.title}
-                </a>
-                <span className="text-xs text-stone-400">{formatDate(doc.uploadedAt)}</span>
+              <li key={doc.id} className="flex flex-wrap items-center justify-between gap-2">
+                <FilePreview
+                  href={`/api/dokumente/${doc.id}`}
+                  name={doc.title}
+                  mimeType={doc.mimeType}
+                  meta={formatDate(doc.uploadedAt)}
+                />
               </li>
             ))}
           </ul>

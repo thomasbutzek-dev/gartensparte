@@ -5,6 +5,7 @@ import Link from "next/link";
 import { formatDate } from "@/lib/format";
 import { listPublishedNews } from "@/lib/site";
 import { badge, card } from "@/lib/ui";
+import RichText from "@/components/RichText";
 import SiteContainer from "@/components/SiteContainer";
 
 export const metadata: Metadata = { title: "News" };
@@ -25,7 +26,7 @@ export default function NewsPage() {
             {item.pinned ? <span className={`${badge} ml-2 bg-amber-100 text-amber-900`}>Oben gehalten</span> : null}
           </h2>
           <p className="text-sm text-stone-500">{formatDate(item.publishedAt)}</p>
-          <p className="mt-2 line-clamp-3 whitespace-pre-line text-sm">{item.body}</p>
+          <RichText html={item.body} clamp className="mt-2 text-sm" />
         </article>
       ))}
     </SiteContainer>
