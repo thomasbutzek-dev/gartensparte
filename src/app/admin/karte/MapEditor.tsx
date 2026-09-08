@@ -4,7 +4,7 @@ import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { MAP_HEIGHT, MAP_WIDTH, centroid, type MapGarden } from "@/components/GardenMap";
 import { insertIndexOnEdge } from "@/lib/map-geometry";
-import { btn, btnDanger, btnPrimary, gardenStatusMapColors, input, label } from "@/lib/ui";
+import { btn, btnDanger, btnPrimary, gardenStatusMapColors } from "@/lib/ui";
 import { deletePolygon, savePolygon } from "./actions";
 
 type Point = [number, number];
@@ -31,7 +31,7 @@ export default function MapEditor({
   const withPolygon = gardens.filter(
     (g): g is typeof g & { polygon: Point[] } => !!g.polygon && g.polygon.length >= 3,
   );
-  const withoutPolygon = gardens.filter((g) => !g.polygon);
+  const withoutPolygon = gardens.filter((g) => !g.polygon || g.polygon.length < 3);
 
   function toMapCoords(clientX: number, clientY: number): Point {
     const svg = svgRef.current;
@@ -150,29 +150,6 @@ export default function MapEditor({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-end gap-3">
-        <div>
-          <label className={label} htmlFor="gardenSelect">Garten auswählen</label>
-          <select
-            id="gardenSelect"
-            className={`${input} w-64`}
-            value={selectedId}
-            onChange={(event) => selectGarden(Number(event.target.value))}
-          >
-            <option value={0}>– Garten wählen –</option>
-            {withoutPolygon.length > 0 && (
-              <optgroup label="Noch ohne Fläche">
-                {withoutPolygon.map((g) => (
-                  <option key={g.id} value={g.id}>Garten {g.number}</option>
-                ))}
-              </optgroup>
-            )}
-            <optgroup label="Bereits eingezeichnet">
-              {withPolygon.map((g) => (
-                <option key={g.id} value={g.id}>Garten {g.number}</option>
-              ))}
-            </optgroup>
-          </select>
-        </div>
         {draft && (
           <>
             <button type="button" className={btn} disabled={points.length === 0} onClick={() => setPoints((p) => p.slice(0, -1))}>
@@ -203,7 +180,53 @@ export default function MapEditor({
         Vorhandene Parzelle: anklicken, Eckpunkte ziehen. Klick auf eine Kante setzt einen Punkt dazu, Doppelklick auf einen Punkt nimmt ihn weg.
       </p>
 
-      <div className="w-full overflow-hidden rounded-lg border border-stone-200 bg-white">
+      <div className="grid items-start gap-4 lg:grid-cols-[13.5rem_minmax(0,1fr)]">
+        <div className="flex max-h-[min(70vh,46rem)] flex-col overflow-hidden rounded-lg border border-stone-200 bg-white">
+          {withoutPolygon.length > 0 ? (
+            <div className="shrink-0 border-b border-stone-200">
+              <p className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-stone-500">
+                Noch ohne Fläche ({withoutPolygon.length})
+              </p>
+              <ul className="max-h-36 overflow-y-auto text-sm">
+                {withoutPolygon.map((g) => (
+                  <li key={g.id}>
+                    <button
+                      type="button"
+                      className={`block w-full px-3 py-1.5 text-left hover:bg-stone-100 ${selectedId === g.id ? "bg-stone-200 font-medium" : ""}`}
+                      onClick={() => selectGarden(g.id)}
+                    >
+                      Garten {g.number}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            <p className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-stone-500">
+              Eingezeichnet ({withPolygon.length})
+            </p>
+            {withPolygon.length === 0 ? (
+              <p className="px-3 pb-3 text-sm text-stone-500">Noch keine Fläche gespeichert.</p>
+            ) : (
+              <ul className="text-sm">
+                {withPolygon.map((g) => (
+                  <li key={g.id}>
+                    <button
+                      type="button"
+                      className={`block w-full px-3 py-1.5 text-left hover:bg-stone-100 ${selectedId === g.id ? "bg-stone-200 font-medium" : ""}`}
+                      onClick={() => selectGarden(g.id)}
+                    >
+                      Garten {g.number}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+
+      <div className="min-w-0 overflow-hidden rounded-lg border border-stone-200 bg-white">
         <svg
           ref={svgRef}
           viewBox={`0 0 ${MAP_WIDTH} ${MAP_HEIGHT}`}
@@ -214,25 +237,27 @@ export default function MapEditor({
           onPointerCancel={handlePointerUp}
         >
           {backgroundUrl ? (
-            <image href={backgroundUrl} x={0} y={0} width={MAP_WIDTH} height={MAP_HEIGHT} opacity={0.45} preserveAspectRatio="xMidYMid meet" />
+            <image href={backgroundUrl} x={0} y={0} width={MAP_WIDTH} height={MAP_HEIGHT} opacity={0.45} preserveAspectRatio="none" />
           ) : (
             <rect x={0} y={0} width={MAP_WIDTH} height={MAP_HEIGHT} fill="#f5f5f4" />
           )}
           {withPolygon.map((garden) => {
-            if (garden.id === selectedId) return null;
             const [cx, cy] = centroid(garden.polygon);
+            const isSelected = garden.id === selectedId;
             return (
               <g key={garden.id} className="cursor-pointer" onClick={(event) => { event.stopPropagation(); selectGarden(garden.id); }}>
                 <polygon
                   points={garden.polygon.map((p) => p.join(",")).join(" ")}
-                  fill={gardenStatusMapColors[garden.status] ?? "#d6d3d1"}
-                  fillOpacity={0.5}
-                  stroke="#57534e"
-                  strokeWidth={1}
+                  fill={gardenStatusMapColors[garden.status] ?? "#93c5fd"}
+                  fillOpacity={isSelected ? 0.2 : 0.55}
+                  stroke={isSelected ? "#1d4ed8" : "#1e3a8a"}
+                  strokeWidth={isSelected ? 2.5 : 2}
                 />
-                <text x={cx} y={cy} textAnchor="middle" dominantBaseline="central" fontSize={13} fontWeight={600} fill="#292524" pointerEvents="none">
-                  {garden.number}
-                </text>
+                {!isSelected ? (
+                  <text x={cx} y={cy} textAnchor="middle" dominantBaseline="central" fontSize={13} fontWeight={600} fill="#1e3a8a" pointerEvents="none">
+                    {garden.number}
+                  </text>
+                ) : null}
               </g>
             );
           })}
@@ -285,6 +310,7 @@ export default function MapEditor({
             </>
           )}
         </svg>
+      </div>
       </div>
     </div>
   );

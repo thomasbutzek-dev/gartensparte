@@ -11,6 +11,9 @@ const { db, tables } = await import("@/db");
 const { nextInvoiceNumber, getSettings, saveSettings } = await import("@/lib/settings");
 const { insertIndexOnEdge, parsePolygon } = await import("@/lib/map");
 const { applyGardenCount, removeGarden } = await import("@/lib/gardens");
+const { collectGardenAttributes, gardenAttributeOptions, parseGardenAttributes, rememberGardenAttribute } = await import("@/lib/garden-attributes");
+const { gardenStatusLabels } = await import("@/lib/ui");
+const { listPublishedNews } = await import("@/lib/site");
 
 describe("Seed", () => {
   it("legt keine Gärten an", () => {
@@ -100,6 +103,8 @@ describe("Karten-Polygone", () => {
     expect(parsePolygon(null)).toBeNull();
     expect(parsePolygon("kein json")).toBeNull();
     expect(parsePolygon("[[0,0],[1,1]]")).toBeNull(); // weniger als 3 Punkte
+    expect(parsePolygon("[[0,0],[10,\"x\"],[10,10]]")).toBeNull();
+    expect(parsePolygon("[[0,0],10,[10,10]]")).toBeNull();
   });
 
   it("findet den Einfügepunkt auf einer Kante", () => {
@@ -107,5 +112,59 @@ describe("Karten-Polygone", () => {
     expect(insertIndexOnEdge(square, [50, 0], 8)).toBe(1);
     expect(insertIndexOnEdge(square, [0, 0], 8)).toBeNull();
     expect(insertIndexOnEdge(square, [50, 50], 8)).toBeNull();
+  });
+});
+
+describe("Garten-Merkmale", () => {
+  it("kennt nur die vier Statuswerte", () => {
+    expect(Object.keys(gardenStatusLabels)).toEqual(["verpachtet", "frei", "entfaellt", "kuendigung"]);
+    expect(gardenStatusLabels.kuendigung).toBe("Gekündigt");
+    expect(gardenStatusLabels.entfaellt).toBe("Nicht vergeben");
+  });
+
+  it("parst Merkmale und nimmt ein neues aus dem Formular auf", () => {
+    expect(parseGardenAttributes('["verwahrlost","kein-anbau"]')).toEqual(["verwahrlost", "kein-anbau"]);
+    expect(parseGardenAttributes("kein json")).toEqual([]);
+    const formData = new FormData();
+    formData.append("attribute", "verwahrlost");
+    formData.append("newAttribute", "Wildwuchs");
+    expect(collectGardenAttributes(formData)).toEqual(["verwahrlost", "Wildwuchs"]);
+    rememberGardenAttribute("Wildwuchs");
+    expect(gardenAttributeOptions().some((item) => item.value === "Wildwuchs")).toBe(true);
+  });
+});
+
+describe("News oben halten", () => {
+  it("zeigt gehaltene Meldungen vor neueren", () => {
+    db.insert(tables.news)
+      .values([
+        {
+          title: "Neu",
+          body: "Text",
+          status: "veroeffentlicht",
+          pinned: false,
+          publishedAt: "2026-09-08T12:00:00.000Z",
+          createdAt: "2026-09-08T12:00:00.000Z",
+        },
+        {
+          title: "Wichtig",
+          body: "Text",
+          status: "veroeffentlicht",
+          pinned: true,
+          publishedAt: "2026-01-01T12:00:00.000Z",
+          createdAt: "2026-01-01T12:00:00.000Z",
+        },
+        {
+          title: "Entwurf",
+          body: "Text",
+          status: "entwurf",
+          pinned: true,
+          publishedAt: null,
+          createdAt: "2026-09-08T12:00:00.000Z",
+        },
+      ])
+      .run();
+
+    expect(listPublishedNews().map((item) => item.title)).toEqual(["Wichtig", "Neu"]);
   });
 });

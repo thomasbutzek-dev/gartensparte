@@ -2,7 +2,8 @@ import Link from "next/link";
 import { asc, isNull, eq } from "drizzle-orm";
 import { db, tables } from "@/db";
 import { requireUser } from "@/lib/auth";
-import { badge, btn, btnPrimary, card, gardenStatusColors, gardenStatusLabels, input, label, tableClass, td, th } from "@/lib/ui";
+import { gardenAttributeLabel, gardenAttributeOptions, gardenHasAttribute, parseGardenAttributes } from "@/lib/garden-attributes";
+import { badge, btn, btnPrimary, card, gardenStatusColors, gardenStatusLabel, gardenStatusLabels, input, label, tableClass, td, th } from "@/lib/ui";
 import { gardenCountsFrom } from "@/lib/site";
 import { createGarden, setGardenCount } from "./actions";
 
@@ -10,6 +11,7 @@ export default async function GaertenPage({ searchParams }: PageProps<"/admin/ga
   await requireUser();
   const params = await searchParams;
   const statusFilter = typeof params.status === "string" ? params.status : "";
+  const attributeFilter = typeof params.merkmal === "string" ? params.merkmal : "";
   const search = typeof params.suche === "string" ? params.suche.toLowerCase() : "";
 
   const gardens = db.select().from(tables.gardens).orderBy(asc(tables.gardens.number)).all();
@@ -28,6 +30,7 @@ export default async function GaertenPage({ searchParams }: PageProps<"/admin/ga
 
   const filtered = gardens
     .filter((g) => !statusFilter || g.status === statusFilter)
+    .filter((g) => !attributeFilter || gardenHasAttribute(g.attributes, attributeFilter))
     .filter((g) => {
       if (!search) return true;
       const tenant = tenantByGarden.get(g.id);
@@ -120,6 +123,12 @@ export default async function GaertenPage({ searchParams }: PageProps<"/admin/ga
             <option key={value} value={value}>{text}</option>
           ))}
         </select>
+        <select name="merkmal" defaultValue={attributeFilter} className="rounded-md border border-stone-300 bg-white px-3 py-2 text-sm">
+          <option value="">Alle Merkmale</option>
+          {gardenAttributeOptions().map((item) => (
+            <option key={item.value} value={item.value}>{item.label}</option>
+          ))}
+        </select>
         <button className={btn}>Filtern</button>
       </form>
       <div className={card}>
@@ -129,6 +138,7 @@ export default async function GaertenPage({ searchParams }: PageProps<"/admin/ga
               <th className={th}>Nr.</th>
               <th className={th}>Größe</th>
               <th className={th}>Status</th>
+              <th className={th}>Merkmale</th>
               <th className={th}>Pächter</th>
               <th className={th}>Zähler-Nr.</th>
             </tr>
@@ -136,6 +146,7 @@ export default async function GaertenPage({ searchParams }: PageProps<"/admin/ga
           <tbody>
             {filtered.map((g) => {
               const tenant = tenantByGarden.get(g.id);
+              const merkmale = parseGardenAttributes(g.attributes);
               return (
                 <tr key={g.id}>
                   <td className={td}>
@@ -145,7 +156,18 @@ export default async function GaertenPage({ searchParams }: PageProps<"/admin/ga
                   </td>
                   <td className={td}>{g.sizeSqm ? `${g.sizeSqm} m²` : "–"}</td>
                   <td className={td}>
-                    <span className={`${badge} ${gardenStatusColors[g.status]}`}>{gardenStatusLabels[g.status]}</span>
+                    <span className={`${badge} ${gardenStatusColors[g.status] ?? "bg-stone-100 text-stone-700"}`}>
+                      {gardenStatusLabel(g.status)}
+                    </span>
+                  </td>
+                  <td className={td}>
+                    {merkmale.length === 0
+                      ? "–"
+                      : merkmale.map((value) => (
+                          <span key={value} className={`${badge} mr-1 bg-stone-100 text-stone-700`}>
+                            {gardenAttributeLabel(value)}
+                          </span>
+                        ))}
                   </td>
                   <td className={td}>
                     {tenant ? (

@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { addressLines, boardExtraText, defaultSettings, mapsSearchUrl, officeHoursLabel } from "@/lib/settings";
+import {
+  addressLines,
+  boardExtraText,
+  defaultSettings,
+  isPublicLageplanVisible,
+  mapsSearchUrl,
+  officeHoursLabel,
+} from "@/lib/settings";
 import { freeGardenCtaLabel, gardenCountsFrom, showFreeGardenCount } from "@/lib/site";
 
 describe("Öffentliche Adresse", () => {
@@ -33,6 +40,14 @@ describe("Öffentliche Adresse", () => {
       "Sparte",
       "Leipzig",
     ]);
+  });
+});
+
+describe("Öffentlicher Lageplan", () => {
+  it("ist standardmäßig aus und nur nach Freigabe sichtbar", () => {
+    expect(defaultSettings.showPublicLageplan).toBe(false);
+    expect(isPublicLageplanVisible(defaultSettings)).toBe(false);
+    expect(isPublicLageplanVisible({ ...defaultSettings, showPublicLageplan: true })).toBe(true);
   });
 });
 

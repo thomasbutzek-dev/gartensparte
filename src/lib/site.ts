@@ -1,4 +1,4 @@
-import { asc, eq } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 import { db, tables } from "@/db";
 
 export { addressLines, mapsSearchUrl } from "@/lib/settings";
@@ -34,6 +34,15 @@ export function freeGardenCtaLabel(counts: GardenCounts): string {
   if (!showFreeGardenCount(counts)) return "Freie Gärten ansehen";
   if (counts.free === 1) return "1 freien Garten jetzt ansehen";
   return `${counts.free} freie Gärten jetzt ansehen`;
+}
+
+export function listPublishedNews(limit?: number) {
+  const query = db
+    .select()
+    .from(tables.news)
+    .where(eq(tables.news.status, "veroeffentlicht"))
+    .orderBy(desc(tables.news.pinned), desc(tables.news.publishedAt), desc(tables.news.id));
+  return limit ? query.limit(limit).all() : query.all();
 }
 
 export function listGalleryImages(homeOnly = false) {

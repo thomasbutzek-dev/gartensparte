@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { asc } from "drizzle-orm";
 import { db, tables } from "@/db";
-import { getSettings } from "@/lib/settings";
+import { getSettings, isPublicLageplanVisible } from "@/lib/settings";
 import { euro } from "@/lib/format";
 import { getMapBackgroundFile, parsePolygon } from "@/lib/map";
 import { btnPrimary, card, input, label, tableClass, td, th } from "@/lib/ui";
@@ -64,15 +64,17 @@ export default async function FreieGaertenPage({ searchParams }: PageProps<"/fre
         </div>
       )}
 
-      <section className="space-y-2">
-        <h2 className="text-lg font-semibold">Lageplan</h2>
-        <p className="text-sm text-stone-500">Blau markierte Parzellen sind frei.</p>
-        <GardenMap
-          gardens={mapGardens}
-          backgroundUrl={mapBackground ? "/api/karte-hintergrund" : null}
-          highlightStatus="frei"
-        />
-      </section>
+      {isPublicLageplanVisible(settings) ? (
+        <section className="space-y-2">
+          <h2 className="text-lg font-semibold">Lageplan</h2>
+          <p className="text-sm text-stone-500">Blau markierte Parzellen sind frei.</p>
+          <GardenMap
+            gardens={mapGardens}
+            backgroundUrl={mapBackground ? "/api/karte-hintergrund" : null}
+            highlightStatus="frei"
+          />
+        </section>
+      ) : null}
 
       <section className="mx-auto w-full max-w-2xl space-y-4">
         <h2 className="text-lg font-semibold">Anfrage stellen / Warteliste</h2>

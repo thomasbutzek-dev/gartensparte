@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { gardenStatusLabels, gardenStatusMapColors } from "@/lib/ui";
+import { gardenStatusLabel, gardenStatusMapColors } from "@/lib/ui";
 
 export type MapGarden = {
   id: number;
@@ -48,7 +48,7 @@ export default function GardenMap({
         onMouseLeave={() => setHover(null)}
       >
         {backgroundUrl ? (
-          <image href={backgroundUrl} x={0} y={0} width={MAP_WIDTH} height={MAP_HEIGHT} opacity={0.4} preserveAspectRatio="xMidYMid meet" />
+            <image href={backgroundUrl} x={0} y={0} width={MAP_WIDTH} height={MAP_HEIGHT} opacity={0.4} preserveAspectRatio="none" />
         ) : (
           <rect x={0} y={0} width={MAP_WIDTH} height={MAP_HEIGHT} fill="#f5f5f4" />
         )}
@@ -69,9 +69,9 @@ export default function GardenMap({
               <polygon
                 points={garden.polygon.map((p) => p.join(",")).join(" ")}
                 fill={gardenStatusMapColors[garden.status] ?? "#d6d3d1"}
-                fillOpacity={dimmed ? 0.25 : 0.75}
-                stroke="#44403c"
-                strokeWidth={dimmed ? 0.5 : 1.5}
+                fillOpacity={dimmed ? 0.35 : 0.7}
+                stroke="#1e3a8a"
+                strokeWidth={dimmed ? 1 : 2}
               />
               <text
                 x={cx}
@@ -96,7 +96,7 @@ export default function GardenMap({
           style={{ left: hover.x + 12, top: hover.y + 12 }}
         >
           <p className="font-semibold">Garten {hover.garden.number}</p>
-          <p>{gardenStatusLabels[hover.garden.status] ?? hover.garden.status}</p>
+          <p>{gardenStatusLabel(hover.garden.status)}</p>
           {hover.garden.sizeSqm ? <p>{hover.garden.sizeSqm} m²</p> : null}
           {hover.garden.extra ? <p>{hover.garden.extra}</p> : null}
         </div>

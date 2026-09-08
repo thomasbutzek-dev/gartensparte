@@ -12,6 +12,7 @@ const newsSchema = z.object({
   title: z.string().trim().min(1).max(200),
   body: z.string().trim().min(1).max(20000),
   status: z.enum(["entwurf", "veroeffentlicht"]),
+  pinned: z.boolean(),
 });
 
 function parseNews(formData: FormData) {
@@ -19,6 +20,7 @@ function parseNews(formData: FormData) {
     title: formData.get("title"),
     body: formData.get("body"),
     status: formData.get("status") ?? "entwurf",
+    pinned: formData.get("pinned") === "1",
   });
 }
 

@@ -2,11 +2,12 @@ import { asc, eq, isNull } from "drizzle-orm";
 import { db, tables } from "@/db";
 import { requireUser } from "@/lib/auth";
 import { getMapBackgroundFile, parsePolygon } from "@/lib/map";
-import { btn, card, gardenStatusLabels, gardenStatusMapColors } from "@/lib/ui";
+import { getSettings } from "@/lib/settings";
+import { btn, btnPrimary, card, gardenStatusLabels, gardenStatusMapColors } from "@/lib/ui";
 import FileDropField from "@/components/FileDropField";
 import GardenMap from "@/components/GardenMap";
 import MapEditor from "./MapEditor";
-import { uploadMapBackground } from "./actions";
+import { updatePublicLageplanVisibility, uploadMapBackground } from "./actions";
 
 export default async function KartePage({ searchParams }: PageProps<"/admin/karte">) {
   await requireUser();
@@ -26,6 +27,7 @@ export default async function KartePage({ searchParams }: PageProps<"/admin/kart
     .all();
   const tenantByGarden = new Map(tenancies.map((t) => [t.gardenId, `${t.firstName} ${t.lastName}`]));
 
+  const settings = getSettings();
   const mapBackground = getMapBackgroundFile();
   const backgroundUrl = mapBackground ? "/api/karte-hintergrund" : null;
   const mapGardens = gardens.map((g) => ({
@@ -56,7 +58,29 @@ export default async function KartePage({ searchParams }: PageProps<"/admin/kart
 
       <p className="text-sm text-stone-500">
         Der Plan der Anlage mit den Parzellen. Die Anfahrt für Besucher steht unter Website.
+        {settings.showPublicLageplan
+          ? " Besucher sehen ihn unter Freie Gärten."
+          : " Besucher sehen ihn derzeit nicht."}
       </p>
+
+      <form action={updatePublicLageplanVisibility} className={`${card} max-w-xl space-y-3`}>
+        <label className="flex items-start gap-3 text-sm text-stone-800">
+          <input
+            type="checkbox"
+            name="showPublicLageplan"
+            value="1"
+            defaultChecked={settings.showPublicLageplan}
+            className="mt-1"
+          />
+          <span>
+            <span className="font-medium">Lageplan auf der öffentlichen Seite zeigen</span>
+            <span className="mt-1 block text-stone-500">
+              Ohne Häkchen bleibt er nur hier. Unter Freie Gärten sehen Interessenten dann nur die Liste.
+            </span>
+          </span>
+        </label>
+        <button className={btnPrimary}>Speichern</button>
+      </form>
       <p className="text-sm text-stone-500">
         {drawnCount} von {gardens.length} Parzellen eingezeichnet.
         {editMode ? "" : " Schieflage oder geänderte Grenzen: Parzellen bearbeiten, dann die Eckpunkte ziehen."}

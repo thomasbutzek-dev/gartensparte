@@ -36,6 +36,7 @@ export type VereinsSettings = {
   mapAddress: string;
   mapLat: number | null;
   mapLng: number | null;
+  showPublicLageplan: boolean;
   logoFile: string;
   heroFile: string;
   scene1Title: string;
@@ -49,6 +50,7 @@ export type VereinsSettings = {
   scene3Image: string;
   gardenDocCategories: string[];
   publicDocCategories: string[];
+  gardenAttributes: string[];
 };
 
 export const defaultSettings: VereinsSettings = {
@@ -86,6 +88,7 @@ export const defaultSettings: VereinsSettings = {
   mapAddress: "",
   mapLat: null,
   mapLng: null,
+  showPublicLageplan: false,
   logoFile: "",
   heroFile: "",
   scene1Title: "Die Parzellen",
@@ -99,6 +102,7 @@ export const defaultSettings: VereinsSettings = {
   scene3Image: "",
   gardenDocCategories: [],
   publicDocCategories: [],
+  gardenAttributes: [],
 };
 
 const SETTINGS_KEY = "verein";
@@ -113,6 +117,7 @@ export function getSettings(): VereinsSettings {
     if (merged.ansprechpartnerText.trim() === oldBoardDefault) {
       merged.ansprechpartnerText = defaultSettings.ansprechpartnerText;
     }
+    merged.showPublicLageplan = merged.showPublicLageplan === true;
     return merged;
   } catch {
     return { ...defaultSettings };
@@ -187,4 +192,9 @@ export function osmEmbedUrl(settings: VereinsSettings): string | null {
 
 export function addressLines(settings: VereinsSettings): string[] {
   return [settings.vereinName, settings.vereinStrasse, settings.vereinOrt].filter(Boolean);
+}
+
+/** Lageplan der Parzellen: öffentlich nur nach Freigabe im Vorstand. */
+export function isPublicLageplanVisible(settings: VereinsSettings): boolean {
+  return settings.showPublicLageplan === true;
 }

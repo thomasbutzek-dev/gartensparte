@@ -3,19 +3,20 @@ import { desc } from "drizzle-orm";
 import { db, tables } from "@/db";
 import { requireUser } from "@/lib/auth";
 import { formatDate } from "@/lib/format";
+import NewsPinnedField from "@/components/NewsPinnedField";
 import { badge, btnPrimary, card, input, label, tableClass, td, th } from "@/lib/ui";
 import { createNews, deleteNews, toggleNewsStatus } from "./actions";
 
 export default async function AdminNewsPage({ searchParams }: PageProps<"/admin/news">) {
   await requireUser();
   const params = await searchParams;
-  const items = db.select().from(tables.news).orderBy(desc(tables.news.createdAt)).all();
+  const items = db.select().from(tables.news).orderBy(desc(tables.news.pinned), desc(tables.news.createdAt)).all();
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">News</h1>
       <p className="text-sm text-stone-500">
-        Meldungen für die Website. Termine (Versammlung, Arbeitseinsatz) stehen extra unter Termine. Ein Entwurf ist nur hier sichtbar.
+        Meldungen für die Website. Termine (Versammlung, Arbeitseinsatz) stehen extra unter Termine. Ein Entwurf ist nur hier sichtbar. Wichtige Dinge könnt ihr oben halten, dann bleiben sie vor neueren Meldungen.
       </p>
       {params.ok && <p className="rounded-md bg-green-100 px-4 py-3 text-green-800">Gespeichert.</p>}
 
@@ -37,6 +38,7 @@ export default async function AdminNewsPage({ searchParams }: PageProps<"/admin/
                     <Link href={`/admin/news/${item.id}`} className="font-medium text-green-800 hover:underline">
                       {item.title}
                     </Link>
+                    {item.pinned ? <span className={`${badge} ml-2 bg-amber-100 text-amber-900`}>Oben gehalten</span> : null}
                   </td>
                   <td className={td}>{formatDate(item.createdAt)}</td>
                   <td className={td}>
@@ -82,6 +84,7 @@ export default async function AdminNewsPage({ searchParams }: PageProps<"/admin/
               <option value="veroeffentlicht">Veröffentlicht (auf der Website)</option>
             </select>
           </div>
+          <NewsPinnedField />
           <button className={btnPrimary}>Anlegen</button>
         </form>
       </div>

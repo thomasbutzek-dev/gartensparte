@@ -38,7 +38,15 @@ export function parsePolygon(value: string | null): [number, number][] | null {
   try {
     const parsed = JSON.parse(value);
     if (!Array.isArray(parsed) || parsed.length < 3) return null;
-    return parsed as [number, number][];
+    const points: [number, number][] = [];
+    for (const item of parsed) {
+      if (!Array.isArray(item) || item.length < 2) return null;
+      const x = Number(item[0]);
+      const y = Number(item[1]);
+      if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+      points.push([x, y]);
+    }
+    return points;
   } catch {
     return null;
   }

@@ -9,6 +9,7 @@ import { db, tables, uploadsDir } from "@/db";
 import { requireUser } from "@/lib/auth";
 import { saveUpload } from "@/lib/files";
 import { setMapBackgroundFile } from "@/lib/map";
+import { getSettings, saveSettings } from "@/lib/settings";
 
 const pointsSchema = z.array(z.tuple([z.number().min(0).max(2000), z.number().min(0).max(2000)])).min(3).max(200);
 
@@ -39,5 +40,14 @@ export async function uploadMapBackground(formData: FormData) {
   if ("error" in saved) redirect("/admin/karte?fehler=datei");
   setMapBackgroundFile(saved.fileName);
   revalidatePath("/admin/karte");
+  redirect("/admin/karte?ok=1");
+}
+
+export async function updatePublicLageplanVisibility(formData: FormData) {
+  await requireUser();
+  const current = getSettings();
+  saveSettings({ ...current, showPublicLageplan: formData.get("showPublicLageplan") === "1" });
+  revalidatePath("/admin/karte");
+  revalidatePath("/freie-gaerten");
   redirect("/admin/karte?ok=1");
 }

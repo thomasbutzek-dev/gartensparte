@@ -1,12 +1,12 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
-import { asc, desc, eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { db, tables } from "@/db";
 import { boardExtraText, getSettings, hasMapPoint, officeHoursLabel, osmEmbedUrl } from "@/lib/settings";
-import { addressLines, freeGardenCtaLabel, gardenCounts, listBoardMembers, listGalleryImages, mapsSearchUrl } from "@/lib/site";
+import { addressLines, freeGardenCtaLabel, gardenCounts, listBoardMembers, listGalleryImages, listPublishedNews, mapsSearchUrl } from "@/lib/site";
 import { formatDate, formatDateTime, today } from "@/lib/format";
-import { card } from "@/lib/ui";
+import { badge, card, photoMuted, photoScrim, photoText, photoWash } from "@/lib/ui";
 import SiteContainer from "@/components/SiteContainer";
 import GardenHeroArt from "@/components/GardenHeroArt";
 import GardenScenes from "@/components/GardenScenes";
@@ -24,13 +24,7 @@ export default function StartPage() {
     .all()
     .filter((event) => event.date >= today())
     .slice(0, 3);
-  const latestNews = db
-    .select()
-    .from(tables.news)
-    .where(eq(tables.news.status, "veroeffentlicht"))
-    .orderBy(desc(tables.news.publishedAt))
-    .limit(3)
-    .all();
+  const latestNews = listPublishedNews(3);
   const gallery = listGalleryImages(true).slice(0, 6);
   const board = listBoardMembers().slice(0, 4);
   const mapsUrl = mapsSearchUrl(settings);
@@ -38,26 +32,26 @@ export default function StartPage() {
 
   return (
     <div>
-      <section className="relative overflow-hidden bg-green-800 text-white">
+      <section className="relative overflow-hidden bg-sparte text-white">
         {settings.heroFile ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src="/api/hero" alt="" className="absolute inset-0 h-full w-full object-cover" />
         ) : null}
-        <div className={`relative ${settings.heroFile ? "bg-green-950/55" : "bg-gradient-to-br from-green-800 via-green-800 to-green-950"}`}>
+        <div className={`relative ${settings.heroFile ? photoWash : "bg-gradient-to-br from-lime-600 via-sparte to-sparte-deep"}`}>
           {!settings.heroFile ? <GardenHeroArt /> : null}
           <SiteContainer className="relative flex min-h-[28rem] flex-col justify-end py-14 md:min-h-[32rem]">
-            <div className="max-w-2xl">
+            <div className={`max-w-2xl ${settings.heroFile ? `-mx-4 px-4 pt-20 ${photoScrim}` : ""}`}>
               {settings.logoFile ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src="/api/logo" alt="" className="mb-5 h-16 w-16 rounded-full bg-white object-contain p-1 shadow" />
               ) : null}
-              <h1 className="text-4xl font-bold tracking-tight md:text-5xl">{settings.vereinName}</h1>
-              {settings.slogan ? <p className="mt-3 text-lg text-green-50">{settings.slogan}</p> : null}
-              <p className="mt-4 max-w-xl whitespace-pre-line text-green-50/90">{settings.startText}</p>
+              <h1 className={`text-4xl font-bold tracking-tight md:text-5xl ${photoText}`}>{settings.vereinName}</h1>
+              {settings.slogan ? <p className={`mt-3 text-lg ${photoMuted}`}>{settings.slogan}</p> : null}
+              <p className={`mt-4 max-w-xl whitespace-pre-line ${photoMuted}`}>{settings.startText}</p>
               <div className="mt-7 flex flex-wrap gap-3">
                 <Link
                   href="/freie-gaerten"
-                  className="rounded-md bg-white px-4 py-2.5 font-medium text-green-900 hover:bg-green-50"
+                  className="rounded-md bg-white px-4 py-2.5 font-medium text-sparte-deep hover:bg-lime-50"
                 >
                   {freeGardenCtaLabel(occupancy)}
                 </Link>
@@ -105,6 +99,7 @@ export default function StartPage() {
                   <Link href={`/news/${item.id}`} className="font-medium text-green-800 hover:underline">
                     {item.title}
                   </Link>
+                  {item.pinned ? <span className={`${badge} ml-2 bg-amber-100 text-amber-900`}>Oben gehalten</span> : null}
                   <p className="text-sm text-stone-500">{formatDate(item.publishedAt)}</p>
                 </li>
               ))}

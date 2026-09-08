@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 import { db, tables } from "@/db";
 import { formatDate } from "@/lib/format";
+import { badge } from "@/lib/ui";
 import SiteContainer from "@/components/SiteContainer";
 
 export default async function NewsDetailPage({ params }: PageProps<"/news/[id]">) {
@@ -23,7 +24,10 @@ export default async function NewsDetailPage({ params }: PageProps<"/news/[id]">
         ← Alle News
       </Link>
       <h1 className="text-2xl font-bold">{item.title}</h1>
-      <p className="text-sm text-stone-500">{formatDate(item.publishedAt)}</p>
+      <p className="text-sm text-stone-500">
+        {formatDate(item.publishedAt)}
+        {item.pinned ? <span className={`${badge} ml-2 bg-amber-100 text-amber-900`}>Oben gehalten</span> : null}
+      </p>
       <div className="whitespace-pre-line leading-relaxed">{item.body}</div>
     </article>
     </SiteContainer>

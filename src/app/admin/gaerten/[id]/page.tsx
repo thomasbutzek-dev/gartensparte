@@ -1,13 +1,15 @@
 import FileDropField from "@/components/FileDropField";
+import GardenMerkmaleFields from "@/components/GardenMerkmaleFields";
 import Link from "next/link";
 import { gardenCategoryLabel, gardenCategoryOptions } from "@/lib/categories";
+import { gardenAttributeLabel, parseGardenAttributes } from "@/lib/garden-attributes";
 import { notFound } from "next/navigation";
 import { asc, desc, eq } from "drizzle-orm";
 import { db, tables } from "@/db";
 import { requireUser, canManageMoney } from "@/lib/auth";
 import { DateField } from "@/components/DateField";
 import { euro, formatDate, today } from "@/lib/format";
-import { badge, btn, btnDanger, btnPrimary, card, gardenStatusColors, gardenStatusLabels, input, label, tableClass, td, th } from "@/lib/ui";
+import { badge, btn, btnDanger, btnPrimary, card, gardenStatusColors, gardenStatusLabel, gardenStatusLabels, input, label, tableClass, td, th } from "@/lib/ui";
 import {
   addGardenNote,
   changeTenant,
@@ -99,7 +101,14 @@ export default async function GartenAktePage({ params, searchParams }: PageProps
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">
           Garten {garden.number}{" "}
-          <span className={`${badge} ${gardenStatusColors[garden.status]} align-middle`}>{gardenStatusLabels[garden.status]}</span>
+          <span className={`${badge} ${gardenStatusColors[garden.status] ?? "bg-stone-100 text-stone-700"} align-middle`}>
+            {gardenStatusLabel(garden.status)}
+          </span>
+          {parseGardenAttributes(garden.attributes).map((value) => (
+            <span key={value} className={`${badge} ml-1 bg-stone-100 text-stone-700 align-middle`}>
+              {gardenAttributeLabel(value)}
+            </span>
+          ))}
         </h1>
         <div className="flex gap-2">
           <Link href="/admin/gaerten" className={btn}>← Zur Liste</Link>
@@ -157,6 +166,7 @@ export default async function GartenAktePage({ params, searchParams }: PageProps
               </select>
               <p className="mt-1 text-xs text-stone-500">„Nicht vergeben“ = diese Nummer gibt es in der Anlage nicht.</p>
             </div>
+            <GardenMerkmaleFields selected={parseGardenAttributes(garden.attributes)} />
           </div>
           <div>
             <label className={label} htmlFor="meterNumber">Stromzähler-Nr.</label>

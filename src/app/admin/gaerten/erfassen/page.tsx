@@ -5,6 +5,8 @@ import { db, tables } from "@/db";
 import { requireUser } from "@/lib/auth";
 import { DateField } from "@/components/DateField";
 import { today } from "@/lib/format";
+import GardenMerkmaleFields from "@/components/GardenMerkmaleFields";
+import { parseGardenAttributes } from "@/lib/garden-attributes";
 import { btn, btnPrimary, card, gardenStatusLabels, input, label } from "@/lib/ui";
 import { quickSaveGarden } from "../actions";
 
@@ -66,6 +68,7 @@ export default async function SchnellerfassungPage({ searchParams }: PageProps<"
               ))}
             </select>
           </div>
+          <GardenMerkmaleFields selected={parseGardenAttributes(garden.attributes)} />
         </div>
         <div>
           <label className={label} htmlFor="meterNumber">Stromzähler-Nr.</label>

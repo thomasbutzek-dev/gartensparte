@@ -2,21 +2,15 @@ export const dynamic = "force-dynamic";
 
 import type { Metadata } from "next";
 import Link from "next/link";
-import { desc, eq } from "drizzle-orm";
-import { db, tables } from "@/db";
 import { formatDate } from "@/lib/format";
-import { card } from "@/lib/ui";
+import { listPublishedNews } from "@/lib/site";
+import { badge, card } from "@/lib/ui";
 import SiteContainer from "@/components/SiteContainer";
 
 export const metadata: Metadata = { title: "News" };
 
 export default function NewsPage() {
-  const items = db
-    .select()
-    .from(tables.news)
-    .where(eq(tables.news.status, "veroeffentlicht"))
-    .orderBy(desc(tables.news.publishedAt))
-    .all();
+  const items = listPublishedNews();
 
   return (
     <SiteContainer className="space-y-6 py-10">
@@ -28,6 +22,7 @@ export default function NewsPage() {
             <Link href={`/news/${item.id}`} className="text-green-800 hover:underline">
               {item.title}
             </Link>
+            {item.pinned ? <span className={`${badge} ml-2 bg-amber-100 text-amber-900`}>Oben gehalten</span> : null}
           </h2>
           <p className="text-sm text-stone-500">{formatDate(item.publishedAt)}</p>
           <p className="mt-2 line-clamp-3 whitespace-pre-line text-sm">{item.body}</p>

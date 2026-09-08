@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getSettings, officeHoursLabel } from "@/lib/settings";
 import { addressLines, gardenCounts, mapsSearchUrl, showFreeGardenCount } from "@/lib/site";
+import { publicHeader, publicNavHover } from "@/lib/ui";
 import SiteContainer from "@/components/SiteContainer";
 
 const navItems = [
@@ -22,7 +23,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
 
   return (
     <div className="flex min-h-screen flex-col bg-stone-50">
-      <header className="sticky top-0 z-30 border-b border-green-900/20 bg-green-800 text-white shadow-sm">
+      <header className={publicHeader}>
         <SiteContainer className="flex flex-wrap items-center justify-between gap-3 py-3">
           <Link href="/" className="flex items-center gap-3">
             {settings.logoFile ? (
@@ -36,7 +37,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
               <Link
                 key={item.href}
                 href={item.href}
-                className="inline-flex items-center gap-1.5 rounded-md px-1 py-0.5 hover:bg-green-700"
+                className={publicNavHover}
               >
                 {item.label}
                 {item.href === "/freie-gaerten" && showFreeBadge ? (

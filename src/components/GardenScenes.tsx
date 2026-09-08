@@ -1,4 +1,5 @@
 import type { VereinsSettings } from "@/lib/settings";
+import { photoMuted, photoScrim, photoText } from "@/lib/ui";
 
 const arts = [
   <svg key="parzelle" viewBox="0 0 160 110" aria-hidden className="h-full w-full text-green-800">
@@ -54,10 +55,10 @@ export default function GardenScenes({ settings }: { settings: VereinsSettings }
                 <div className="h-24 w-full">{scene.art}</div>
               </div>
             )}
-            <div className={`relative flex h-full min-h-56 flex-col justify-end p-6 ${scene.image ? "bg-green-950/55 text-white" : "text-green-950"}`}>
+            <div className={`relative flex h-full min-h-56 flex-col justify-end p-6 ${scene.image ? `${photoScrim} ${photoText}` : "text-sparte-deep"}`}>
               {scene.title ? <h2 className="font-semibold">{scene.title}</h2> : null}
               {scene.text ? (
-                <p className={`mt-2 text-sm ${scene.image ? "text-green-50" : "text-stone-600"}`}>{scene.text}</p>
+                <p className={`mt-2 text-sm ${scene.image ? photoMuted : "text-stone-600"}`}>{scene.text}</p>
               ) : null}
             </div>
           </article>

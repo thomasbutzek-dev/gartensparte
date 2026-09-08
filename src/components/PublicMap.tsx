@@ -47,7 +47,7 @@ export default function PublicMap({
             Karte von OpenStreetMap anzeigen
           </span>
         )}
-        <span className="absolute inset-x-0 bottom-0 bg-green-950/70 px-3 py-2 text-sm text-white">
+        <span className="absolute inset-x-0 bottom-0 bg-sparte-deep/80 px-3 py-2 text-sm text-white">
           Karte bewegen und vergrößern
         </span>
       </button>

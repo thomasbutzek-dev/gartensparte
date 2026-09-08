@@ -2,6 +2,9 @@
 
 @theme {
   --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --color-sparte: #2f7d32;
+  --color-sparte-hover: #3a9140;
+  --color-sparte-deep: #246128;
 }
 
 body {

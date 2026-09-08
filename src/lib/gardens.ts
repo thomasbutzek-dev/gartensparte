@@ -21,8 +21,15 @@ function gardenHasContent(garden: {
   meterNumber: string;
   note: string;
   polygon: string | null;
+  attributes?: string;
 }): boolean {
-  return Boolean(garden.sizeSqm || garden.meterNumber || garden.note || garden.polygon);
+  return Boolean(
+    garden.sizeSqm ||
+      garden.meterNumber ||
+      garden.note ||
+      garden.polygon ||
+      (garden.attributes && garden.attributes !== "[]"),
+  );
 }
 
 function gardenHasHistory(gardenId: number): boolean {

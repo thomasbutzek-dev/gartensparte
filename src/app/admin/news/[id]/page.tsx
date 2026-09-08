@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { db, tables } from "@/db";
 import { requireUser } from "@/lib/auth";
+import NewsPinnedField from "@/components/NewsPinnedField";
 import { btn, btnPrimary, card, input, label } from "@/lib/ui";
 import { updateNews } from "../actions";
 
@@ -32,9 +33,10 @@ export default async function NewsBearbeitenPage({ params }: PageProps<"/admin/n
           <select id="status" name="status" defaultValue={item.status} className={input}>
             <option value="entwurf">Entwurf (nur intern)</option>
             <option value="veroeffentlicht">Veröffentlicht (auf der Website)</option>
-          </select>
-        </div>
-        <button className={btnPrimary}>Speichern</button>
+            </select>
+          </div>
+          <NewsPinnedField defaultChecked={item.pinned} />
+          <button className={btnPrimary}>Speichern</button>
       </form>
     </div>
   );

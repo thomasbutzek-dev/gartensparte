@@ -12,10 +12,11 @@ import { nowIso, parseDateInput, today } from "@/lib/format";
 import { categoryFromForm, rememberGardenCategory } from "@/lib/categories";
 import { saveUpload } from "@/lib/files";
 import { applyGardenCount, parseGardenCount, removeGarden } from "@/lib/gardens";
+import { collectGardenAttributes } from "@/lib/garden-attributes";
 
 const gardenSchema = z.object({
   sizeSqm: z.coerce.number().min(0).max(100000).optional(),
-  status: z.enum(["verpachtet", "frei", "kuendigung", "verwahrlost", "entfaellt"]),
+  status: z.enum(["verpachtet", "frei", "kuendigung", "entfaellt"]),
   meterNumber: z.string().trim().max(100).default(""),
   note: z.string().trim().max(5000).default(""),
 });
@@ -60,6 +61,7 @@ export async function updateGarden(gardenId: number, formData: FormData) {
       number,
       sizeSqm: data.sizeSqm ?? null,
       status: data.status,
+      attributes: JSON.stringify(collectGardenAttributes(formData)),
       meterNumber: data.meterNumber,
       note: data.note,
     })
@@ -138,6 +140,7 @@ export async function quickSaveGarden(gardenId: number, formData: FormData) {
       number,
       sizeSqm: data.sizeSqm ?? null,
       status: data.status,
+      attributes: JSON.stringify(collectGardenAttributes(formData)),
       meterNumber: data.meterNumber,
       note: data.note,
     })

@@ -43,7 +43,7 @@ export default async function VorlagenPage({ searchParams }: PageProps<"/admin/s
             <label className={label} htmlFor="newEffect">Nach dem PDF</label>
             <select id="newEffect" name="effect" className={input}>
               <option value="none">Nichts weiter</option>
-              <option value="kuendigung">Garten auf „Kündigung“ setzen</option>
+              <option value="kuendigung">Garten auf „Gekündigt“ setzen</option>
             </select>
           </div>
         </div>

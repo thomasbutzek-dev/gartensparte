@@ -43,9 +43,10 @@ export const gardens = sqliteTable(
     id: integer("id").primaryKey({ autoIncrement: true }),
     number: integer("number").notNull(),
     sizeSqm: real("size_sqm"),
-    status: text("status", { enum: ["verpachtet", "frei", "kuendigung", "verwahrlost", "entfaellt"] })
+    status: text("status", { enum: ["verpachtet", "frei", "kuendigung", "entfaellt"] })
       .notNull()
       .default("frei"),
+    attributes: text("attributes").notNull().default("[]"),
     meterNumber: text("meter_number").notNull().default(""),
     note: text("note").notNull().default(""),
     // Polygon im SVG-Koordinatensystem: JSON [[x,y],...]
@@ -160,6 +161,7 @@ export const news = sqliteTable("news", {
   title: text("title").notNull(),
   body: text("body").notNull(),
   status: text("status", { enum: ["entwurf", "veroeffentlicht"] }).notNull().default("entwurf"),
+  pinned: integer("pinned", { mode: "boolean" }).notNull().default(false),
   publishedAt: text("published_at"),
   createdAt: text("created_at").notNull(),
 });
