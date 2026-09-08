@@ -20,6 +20,7 @@ export function ensureSeeded(db: BetterSQLite3Database<typeof schema>) {
         active: true,
         createdAt: now,
       })
+      .onConflictDoNothing()
       .run();
   }
 

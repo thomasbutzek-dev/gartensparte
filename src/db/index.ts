@@ -37,8 +37,11 @@ globalForDb.__sqlite = sqlite;
 
 export const db = drizzle(sqlite, { schema });
 
-// Migrationen beim Start anwenden (idempotent), danach Erstbefüllung
-migrate(db, { migrationsFolder: join(process.cwd(), "src", "db", "migrations") });
-ensureSeeded(db);
+// Beim `next build` nicht befüllen: mehrere Worker würden sonst gleichzeitig
+// denselben Admin anlegen. Migrationen laufen erst im laufenden Container.
+if (process.env.NEXT_PHASE !== "phase-production-build") {
+  migrate(db, { migrationsFolder: join(process.cwd(), "src", "db", "migrations") });
+  ensureSeeded(db);
+}
 
 export * as tables from "./schema";
