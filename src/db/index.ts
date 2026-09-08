@@ -31,17 +31,15 @@ const sqlite =
     const instance = new Database(join(dataDir, "gartensparte.sqlite"));
     instance.pragma("journal_mode = WAL");
     instance.pragma("foreign_keys = ON");
+    instance.pragma("busy_timeout = 5000");
     return instance;
   })();
 globalForDb.__sqlite = sqlite;
 
 export const db = drizzle(sqlite, { schema });
 
-// Beim `next build` nicht befüllen: mehrere Worker würden sonst gleichzeitig
-// denselben Admin anlegen. Migrationen laufen erst im laufenden Container.
-if (process.env.NEXT_PHASE !== "phase-production-build") {
-  migrate(db, { migrationsFolder: join(process.cwd(), "src", "db", "migrations") });
-  ensureSeeded(db);
-}
+// Migrationen beim Start anwenden (idempotent), danach Erstbefüllung
+migrate(db, { migrationsFolder: join(process.cwd(), "src", "db", "migrations") });
+ensureSeeded(db);
 
 export * as tables from "./schema";

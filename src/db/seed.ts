@@ -42,6 +42,7 @@ export function ensureSeeded(db: BetterSQLite3Database<typeof schema>) {
           body: template.body,
           updatedAt: now,
         })
+        .onConflictDoNothing()
         .run();
       continue;
     }
