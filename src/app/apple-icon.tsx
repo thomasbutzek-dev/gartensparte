@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export default async function AppleIcon() {
   const png = await logoIconPng(size.width);
   if (png) {
-    return new Response(png, {
+    return new Response(new Uint8Array(png), {
       headers: {
         "Content-Type": "image/png",
         "Cache-Control": "public, max-age=60",
