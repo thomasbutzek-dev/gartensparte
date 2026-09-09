@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { boardExtraText, getSettings, officeHoursLabel } from "@/lib/settings";
-import { listBoardMembers } from "@/lib/site";
+import { boardPhotoUrl, listBoardMembers } from "@/lib/site";
 import { card } from "@/lib/ui";
 import RichText from "@/components/RichText";
 import SiteContainer from "@/components/SiteContainer";
@@ -23,11 +23,13 @@ export default function VorstandPage() {
 
       {board.length > 0 ? (
         <div className="grid gap-4 sm:grid-cols-2">
-          {board.map((member) => (
+          {board.map((member) => {
+            const photo = boardPhotoUrl(member);
+            return (
             <article key={member.id} className={`${card} flex gap-4`}>
-              {member.photoFile ? (
+              {photo ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={`/api/vorstand-foto/${member.id}`} alt="" className="h-20 w-20 shrink-0 rounded-full object-cover" />
+                <img src={photo} alt="" className="h-20 w-20 shrink-0 rounded-full object-cover" />
               ) : (
                 <span className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full bg-green-100 text-xl font-semibold text-green-800">
                   {member.name.slice(0, 1)}
@@ -46,7 +48,8 @@ export default function VorstandPage() {
                 {member.phone ? <p className="text-sm text-stone-600">{member.phone}</p> : null}
               </div>
             </article>
-          ))}
+            );
+          })}
         </div>
       ) : null}
 

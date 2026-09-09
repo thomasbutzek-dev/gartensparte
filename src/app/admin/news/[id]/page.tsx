@@ -5,7 +5,8 @@ import { db, tables } from "@/db";
 import { requireUser } from "@/lib/auth";
 import NewsPinnedField from "@/components/NewsPinnedField";
 import RichTextEditor from "@/components/RichTextEditor";
-import { btn, btnPrimary, card, input, label } from "@/lib/ui";
+import SaveButton from "@/components/SaveButton";
+import { btn, card, input, label } from "@/lib/ui";
 import { updateNews } from "../actions";
 
 export default async function NewsBearbeitenPage({ params }: PageProps<"/admin/news/[id]">) {
@@ -37,7 +38,7 @@ export default async function NewsBearbeitenPage({ params }: PageProps<"/admin/n
             </select>
           </div>
           <NewsPinnedField defaultChecked={item.pinned} />
-          <button className={btnPrimary}>Speichern</button>
+          <SaveButton>Speichern</SaveButton>
       </form>
     </div>
   );

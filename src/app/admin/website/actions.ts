@@ -6,13 +6,14 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db, tables, uploadsDir } from "@/db";
-import { requireUser } from "@/lib/auth";
+import { requireWrite } from "@/lib/auth";
 import { saveImageUpload } from "@/lib/files";
 import { nowIso } from "@/lib/format";
 import { geocodeAddress } from "@/lib/geocode";
 import { refreshMapPreview } from "@/lib/map-preview";
 import { readRichText } from "@/lib/rich-text";
 import { getSettings, saveSettings } from "@/lib/settings";
+import { listBoardMembers, moveInList } from "@/lib/site";
 
 function text(formData: FormData, key: string, max = 2000): string {
   return String(formData.get(key) ?? "").trim().slice(0, max);
@@ -21,10 +22,13 @@ function text(formData: FormData, key: string, max = 2000): string {
 function revalidatePublic() {
   revalidatePath("/", "layout");
   revalidatePath("/admin/website");
+  revalidatePath("/icon");
+  revalidatePath("/apple-icon");
+  revalidatePath("/favicon.ico");
 }
 
 export async function updateVereinContact(formData: FormData) {
-  await requireUser();
+  await requireWrite();
   const current = getSettings();
   saveSettings({
     ...current,
@@ -40,7 +44,7 @@ export async function updateVereinContact(formData: FormData) {
 }
 
 export async function updateAppearance(formData: FormData) {
-  await requireUser();
+  await requireWrite();
   const current = getSettings();
   saveSettings({
     ...current,
@@ -66,7 +70,7 @@ export async function updateAppearance(formData: FormData) {
 }
 
 export async function lookupMapAddress(formData: FormData) {
-  await requireUser();
+  await requireWrite();
   const query = text(formData, "mapAddress", 300);
   if (!query) redirect("/admin/website?fehler=adresse");
   const found = await geocodeAddress(query);
@@ -84,7 +88,7 @@ export async function lookupMapAddress(formData: FormData) {
 }
 
 export async function saveMapPoint(formData: FormData) {
-  await requireUser();
+  await requireWrite();
   const lat = Number(String(formData.get("mapLat") ?? ""));
   const lng = Number(String(formData.get("mapLng") ?? ""));
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) redirect("/admin/website?fehler=adresse");
@@ -96,7 +100,7 @@ export async function saveMapPoint(formData: FormData) {
 }
 
 export async function uploadLogo(formData: FormData) {
-  await requireUser();
+  await requireWrite();
   const file = formData.get("file") as File | null;
   if (!file) redirect("/admin/website?fehler=datei");
   const saved = await saveImageUpload(join(uploadsDir, "website"), file);
@@ -111,7 +115,7 @@ export async function uploadLogo(formData: FormData) {
 }
 
 export async function removeLogo() {
-  await requireUser();
+  await requireWrite();
   const current = getSettings();
   if (current.logoFile) {
     await unlink(join(uploadsDir, "website", current.logoFile)).catch(() => {});
@@ -122,7 +126,7 @@ export async function removeLogo() {
 }
 
 export async function uploadHero(formData: FormData) {
-  await requireUser();
+  await requireWrite();
   const file = formData.get("file") as File | null;
   if (!file) redirect("/admin/website?fehler=datei");
   const saved = await saveImageUpload(join(uploadsDir, "website"), file);
@@ -139,7 +143,7 @@ export async function uploadHero(formData: FormData) {
 const sceneImageKeys = ["scene1Image", "scene2Image", "scene3Image"] as const;
 
 export async function uploadSceneImage(slot: number, formData: FormData) {
-  await requireUser();
+  await requireWrite();
   const key = sceneImageKeys[slot - 1];
   if (!key) redirect("/admin/website");
   const file = formData.get("file") as File | null;
@@ -156,7 +160,7 @@ export async function uploadSceneImage(slot: number, formData: FormData) {
 }
 
 export async function removeSceneImage(slot: number) {
-  await requireUser();
+  await requireWrite();
   const key = sceneImageKeys[slot - 1];
   if (!key) redirect("/admin/website");
   const current = getSettings();
@@ -169,7 +173,7 @@ export async function removeSceneImage(slot: number) {
 }
 
 export async function removeHero() {
-  await requireUser();
+  await requireWrite();
   const current = getSettings();
   if (current.heroFile) {
     await unlink(join(uploadsDir, "website", current.heroFile)).catch(() => {});
@@ -180,7 +184,7 @@ export async function removeHero() {
 }
 
 export async function addGalleryImage(formData: FormData) {
-  await requireUser();
+  await requireWrite();
   const files = formData.getAll("file").filter((item): item is File => item instanceof File && item.size > 0);
   if (files.length === 0) redirect("/admin/website?fehler=datei");
   const existing = db.select().from(tables.galleryImages).all();
@@ -209,7 +213,7 @@ export async function addGalleryImage(formData: FormData) {
 }
 
 export async function updateGalleryImage(imageId: number, formData: FormData) {
-  await requireUser();
+  await requireWrite();
   db.update(tables.galleryImages)
     .set({
       caption: text(formData, "caption", 200),
@@ -223,7 +227,7 @@ export async function updateGalleryImage(imageId: number, formData: FormData) {
 }
 
 export async function deleteGalleryImage(imageId: number) {
-  await requireUser();
+  await requireWrite();
   const image = db.select().from(tables.galleryImages).where(eq(tables.galleryImages.id, imageId)).get();
   if (image) {
     db.delete(tables.galleryImages).where(eq(tables.galleryImages.id, imageId)).run();
@@ -234,16 +238,16 @@ export async function deleteGalleryImage(imageId: number) {
 }
 
 export async function addBoardMember(formData: FormData) {
-  await requireUser();
+  await requireWrite();
   const name = text(formData, "name", 120);
-  if (!name) redirect("/admin/website?fehler=name");
+  if (!name) redirect("/admin/website?fehler=name#vorstand");
   const existing = db.select().from(tables.boardMembers).all();
   const maxOrder = existing.reduce((max, row) => Math.max(max, row.sortOrder), 0);
   let photoFile: string | null = null;
   const file = formData.get("photo") as File | null;
   if (file && file.size > 0) {
     const saved = await saveImageUpload(join(uploadsDir, "vorstand"), file);
-    if ("error" in saved) redirect("/admin/website?fehler=bild");
+    if ("error" in saved) redirect("/admin/website?fehler=bild#vorstand");
     photoFile = saved.fileName;
   }
   db.insert(tables.boardMembers)
@@ -257,20 +261,20 @@ export async function addBoardMember(formData: FormData) {
     })
     .run();
   revalidatePublic();
-  redirect("/admin/website?ok=vorstand");
+  redirect("/admin/website?ok=vorstand#vorstand");
 }
 
 export async function updateBoardMember(memberId: number, formData: FormData) {
-  await requireUser();
+  await requireWrite();
   const name = text(formData, "name", 120);
-  if (!name) redirect("/admin/website?fehler=name");
+  if (!name) redirect("/admin/website?fehler=name#vorstand");
   const current = db.select().from(tables.boardMembers).where(eq(tables.boardMembers.id, memberId)).get();
   if (!current) redirect("/admin/website");
   let photoFile = current.photoFile;
   const file = formData.get("photo") as File | null;
   if (file && file.size > 0) {
     const saved = await saveImageUpload(join(uploadsDir, "vorstand"), file);
-    if ("error" in saved) redirect("/admin/website?fehler=bild");
+    if ("error" in saved) redirect("/admin/website?fehler=bild#vorstand");
     if (current.photoFile) {
       await unlink(join(uploadsDir, "vorstand", current.photoFile)).catch(() => {});
     }
@@ -283,16 +287,30 @@ export async function updateBoardMember(memberId: number, formData: FormData) {
       email: text(formData, "email", 200),
       phone: text(formData, "phone", 80),
       photoFile,
-      sortOrder: Number(formData.get("sortOrder") || 0) || 0,
     })
     .where(eq(tables.boardMembers.id, memberId))
     .run();
   revalidatePublic();
-  redirect("/admin/website?ok=vorstand");
+  redirect("/admin/website?ok=vorstand#vorstand");
+}
+
+export async function moveBoardMember(memberId: number, direction: "up" | "down") {
+  await requireWrite();
+  const next = moveInList(listBoardMembers(), memberId, direction);
+  if (next) {
+    for (const [index, member] of next.entries()) {
+      db.update(tables.boardMembers)
+        .set({ sortOrder: index + 1 })
+        .where(eq(tables.boardMembers.id, member.id))
+        .run();
+    }
+  }
+  revalidatePublic();
+  redirect("/admin/website?ok=vorstand#vorstand");
 }
 
 export async function deleteBoardMember(memberId: number) {
-  await requireUser();
+  await requireWrite();
   const current = db.select().from(tables.boardMembers).where(eq(tables.boardMembers.id, memberId)).get();
   if (current) {
     db.delete(tables.boardMembers).where(eq(tables.boardMembers.id, memberId)).run();
@@ -301,5 +319,5 @@ export async function deleteBoardMember(memberId: number) {
     }
   }
   revalidatePublic();
-  redirect("/admin/website?ok=vorstand");
+  redirect("/admin/website?ok=vorstand#vorstand");
 }

@@ -2,10 +2,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { desc, eq } from "drizzle-orm";
 import { db, tables } from "@/db";
-import { requireUser, canManageMoney, canAdminister } from "@/lib/auth";
+import { requireUser, canSeeMoney, canAdminister } from "@/lib/auth";
 import { euro, formatDate } from "@/lib/format";
 import { getWorkExemption } from "@/lib/work-hours";
-import { btn, btnDanger, btnPrimary, card, tableClass, td, th } from "@/lib/ui";
+import SaveButton from "@/components/SaveButton";
+import { btn, btnDanger, card, tableClass, td, th } from "@/lib/ui";
 import MemberFields from "../MemberFields";
 import { deleteMember, setMemberStatus, updateMember } from "../actions";
 
@@ -82,7 +83,7 @@ export default async function MitgliedPage({ params, searchParams }: PageProps<"
         <form action={updateAction} className={`${card} space-y-4`}>
           <h2 className="text-lg font-semibold">Stammdaten</h2>
           <MemberFields values={member} />
-          <button className={btnPrimary}>Speichern</button>
+          <SaveButton>Speichern</SaveButton>
         </form>
 
         <div className="space-y-6">
@@ -113,7 +114,7 @@ export default async function MitgliedPage({ params, searchParams }: PageProps<"
             </Link>
           </section>
 
-          {canManageMoney(user) && (
+          {canSeeMoney(user) && (
             <section className={card}>
               <h2 className="mb-3 text-lg font-semibold">Zahlungen</h2>
               <p className="text-sm">

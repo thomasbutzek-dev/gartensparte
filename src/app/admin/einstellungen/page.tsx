@@ -1,7 +1,9 @@
+import { redirect } from "next/navigation";
 import RichTextEditor from "@/components/RichTextEditor";
-import { requireAdminRole } from "@/lib/auth";
+import { canSeeSettings, requireUser } from "@/lib/auth";
 import { getSettings } from "@/lib/settings";
-import { btnPrimary, card, input, label } from "@/lib/ui";
+import SaveButton from "@/components/SaveButton";
+import { card, input, label } from "@/lib/ui";
 import { updateSettings } from "./actions";
 
 function euroValue(cents: number): string {
@@ -9,7 +11,8 @@ function euroValue(cents: number): string {
 }
 
 export default async function EinstellungenPage({ searchParams }: PageProps<"/admin/einstellungen">) {
-  await requireAdminRole();
+  const user = await requireUser();
+  if (!canSeeSettings(user)) redirect("/admin?fehler=rechte");
   const params = await searchParams;
   const s = getSettings();
 
@@ -103,7 +106,7 @@ export default async function EinstellungenPage({ searchParams }: PageProps<"/ad
           </div>
         </section>
 
-        <button className={btnPrimary}>Alle Einstellungen speichern</button>
+        <SaveButton>Alle Einstellungen speichern</SaveButton>
       </form>
     </div>
   );

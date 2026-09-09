@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { MAP_HEIGHT, MAP_WIDTH, centroid, type MapGarden } from "@/components/GardenMap";
 import { insertIndexOnEdge } from "@/lib/map-geometry";
 import { btn, btnDanger, btnPrimary, gardenStatusMapColors } from "@/lib/ui";
+import { useDemoMode } from "@/components/DemoProvider";
 import { deletePolygon, savePolygon } from "./actions";
 
 type Point = [number, number];
@@ -17,6 +18,7 @@ export default function MapEditor({
   backgroundUrl: string | null;
 }) {
   const router = useRouter();
+  const demo = useDemoMode();
   const svgRef = useRef<SVGSVGElement>(null);
   const dragged = useRef(false);
   const [selectedId, setSelectedId] = useState<number>(0);
@@ -120,6 +122,10 @@ export default function MapEditor({
   }
 
   async function save() {
+    if (demo) {
+      setMessage("Im Demo-Modus wird nichts gespeichert.");
+      return;
+    }
     if (!selected || points.length < 3) {
       setMessage("Mindestens 3 Eckpunkte setzen.");
       return;
@@ -136,6 +142,10 @@ export default function MapEditor({
   }
 
   async function removePolygon() {
+    if (demo) {
+      setMessage("Im Demo-Modus wird nichts gespeichert.");
+      return;
+    }
     if (!selected) return;
     await deletePolygon(selected.id);
     setPoints([]);
@@ -145,7 +155,7 @@ export default function MapEditor({
     startTransition(() => router.refresh());
   }
 
-  const canSave = points.length >= 3 && (draft || dirty) && !pending;
+  const canSave = !demo && points.length >= 3 && (draft || dirty) && !pending;
 
   return (
     <div className="space-y-4">
@@ -169,7 +179,7 @@ export default function MapEditor({
           Fläche speichern ({points.length} Punkte)
         </button>
         {selected && !draft && selected.polygon && (
-          <button type="button" className={btnDanger} disabled={pending} onClick={() => void removePolygon()}>
+        <button type="button" className={btnDanger} disabled={pending || demo} onClick={() => void removePolygon()}>
             Fläche löschen
           </button>
         )}

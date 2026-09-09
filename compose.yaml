@@ -10,5 +10,6 @@ services:
       # Sicherung = diesen Ordner kopieren.
       - ./data:/app/data
     environment:
-      # Passwort des ersten Admin-Kontos (nur beim allerersten Start relevant)
+      # Passwörter der ersten Konten (nur beim allerersten Start relevant)
       ADMIN_START_PASSWORD: ${ADMIN_START_PASSWORD:-gartensparte-start}
+      DEMO_START_PASSWORD: ${DEMO_START_PASSWORD:-gartensparte-demo}

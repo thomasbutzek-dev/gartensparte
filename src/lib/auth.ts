@@ -5,11 +5,20 @@ import { redirect } from "next/navigation";
 import { cache } from "react";
 import { eq } from "drizzle-orm";
 import { db, tables } from "@/db";
+import {
+  canAdministerRole,
+  canManageMoneyRole,
+  canSeeMoneyRole,
+  canSeeSettingsRole,
+  canWriteRole,
+  isDemoRole,
+  type Role,
+} from "@/lib/roles";
 
 const SESSION_COOKIE = "session";
 const SESSION_DAYS = 14;
 
-export type Role = "admin" | "vorstand" | "kassenwart";
+export type { Role };
 export type SessionUser = { id: number; name: string; username: string; role: Role };
 
 export { hashPassword, verifyPassword } from "@/lib/password";
@@ -21,6 +30,7 @@ function hashToken(token: string): string {
 }
 
 export async function createSession(userId: number): Promise<void> {
+  await destroySession();
   const token = randomBytes(32).toString("hex");
   const expiresAt = Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000;
   db.insert(tables.sessions).values({ id: hashToken(token), userId, expiresAt }).run();
@@ -59,14 +69,32 @@ export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
 
 // ---------- Rechte ----------
 
-/** Kassengeschäfte: Zahlungen, Rechnungen, Mahnungen. */
-export function canManageMoney(user: SessionUser): boolean {
-  return user.role === "admin" || user.role === "kassenwart";
+export function isDemo(user: SessionUser): boolean {
+  return isDemoRole(user.role);
 }
 
-/** Benutzerverwaltung und Einstellungen. */
+export function canWrite(user: SessionUser): boolean {
+  return canWriteRole(user.role);
+}
+
+/** Kassengeschäfte ausführen: Zahlungen, Rechnungen, Mahnungen. */
+export function canManageMoney(user: SessionUser): boolean {
+  return canManageMoneyRole(user.role);
+}
+
+/** Kasse anschauen, ohne zu buchen. Demo darf mitlesen. */
+export function canSeeMoney(user: SessionUser): boolean {
+  return canSeeMoneyRole(user.role);
+}
+
+/** Benutzerverwaltung und Einstellungen ändern. */
 export function canAdminister(user: SessionUser): boolean {
-  return user.role === "admin";
+  return canAdministerRole(user.role);
+}
+
+/** Bank, Beiträge und Impressum anschauen. Demo darf mitlesen. */
+export function canSeeSettings(user: SessionUser): boolean {
+  return canSeeSettingsRole(user.role);
 }
 
 export async function requireUser(): Promise<SessionUser> {
@@ -75,8 +103,21 @@ export async function requireUser(): Promise<SessionUser> {
   return user;
 }
 
+export async function requireWrite(): Promise<SessionUser> {
+  const user = await requireUser();
+  if (!canWrite(user)) redirect("/admin?fehler=demo");
+  return user;
+}
+
+/** Kasse ausführen. Demo kommt hier nicht durch. */
 export async function requireMoneyRole(): Promise<SessionUser> {
   const user = await requireUser();
+  if (!canManageMoney(user)) redirect("/admin?fehler=rechte");
+  return user;
+}
+
+export async function requireMoneyWrite(): Promise<SessionUser> {
+  const user = await requireWrite();
   if (!canManageMoney(user)) redirect("/admin?fehler=rechte");
   return user;
 }

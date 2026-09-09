@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
-import { btn, btnPrimary, card } from "@/lib/ui";
+import SaveButton from "@/components/SaveButton";
+import { btn, card } from "@/lib/ui";
 import MemberFields from "../MemberFields";
 import { createMember } from "../actions";
 
@@ -12,7 +13,7 @@ export default async function NeuesMitgliedPage() {
       <form action={createMember} className={`${card} space-y-4`}>
         <MemberFields />
         <div className="flex gap-3">
-          <button className={btnPrimary}>Anlegen</button>
+          <SaveButton>Anlegen</SaveButton>
           <Link href="/admin/mitglieder" className={btn}>Abbrechen</Link>
         </div>
       </form>

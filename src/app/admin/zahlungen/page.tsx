@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { asc, desc, eq } from "drizzle-orm";
 import { db, tables } from "@/db";
-import { requireMoneyRole } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { canSeeMoney, requireUser } from "@/lib/auth";
 import { DateField } from "@/components/DateField";
 import { euro, formatDate, today } from "@/lib/format";
-import { btn, btnPrimary, card, input, label, tableClass, td, th } from "@/lib/ui";
+import SaveButton from "@/components/SaveButton";
+import { btn, card, input, label, tableClass, td, th } from "@/lib/ui";
 import { addPayment, deletePayment, dunPayment, markPaid, reopenPayment } from "./actions";
 
 const typeLabels: Record<string, string> = {
@@ -17,7 +19,8 @@ const typeLabels: Record<string, string> = {
 };
 
 export default async function ZahlungenPage({ searchParams }: PageProps<"/admin/zahlungen">) {
-  await requireMoneyRole();
+  const user = await requireUser();
+  if (!canSeeMoney(user)) redirect("/admin?fehler=rechte");
   const params = await searchParams;
   const currentYear = new Date().getFullYear();
   const year = Number(params.jahr) || currentYear;
@@ -145,7 +148,7 @@ export default async function ZahlungenPage({ searchParams }: PageProps<"/admin/
             <input id="pDesc" name="description" className={input} placeholder="z.B. Wasserumlage" />
           </div>
           <div className="flex items-end">
-            <button className={btnPrimary}>Anlegen</button>
+            <SaveButton>Anlegen</SaveButton>
           </div>
         </form>
       </section>

@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { asc, eq, gt } from "drizzle-orm";
 import { z } from "zod";
 import { db, tables } from "@/db";
-import { requireUser } from "@/lib/auth";
+import { requireWrite } from "@/lib/auth";
 import { parseDateInput, today } from "@/lib/format";
 
 const readingSchema = z.object({
@@ -15,7 +15,7 @@ const readingSchema = z.object({
 });
 
 export async function saveReading(gardenId: number, formData: FormData) {
-  const user = await requireUser();
+  const user = await requireWrite();
   const raw = String(formData.get("value") ?? "").replace(",", ".");
   const parsed = readingSchema.safeParse({
     date: parseDateInput(String(formData.get("date") ?? "")) || today(),
@@ -48,7 +48,7 @@ export async function saveReading(gardenId: number, formData: FormData) {
 }
 
 export async function deleteReading(readingId: number, gardenId: number) {
-  await requireUser();
+  await requireWrite();
   db.delete(tables.meterReadings).where(eq(tables.meterReadings.id, readingId)).run();
   revalidatePath("/admin/ablesen");
   revalidatePath(`/admin/gaerten/${gardenId}`);

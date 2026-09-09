@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db, tables } from "@/db";
-import { requireUser } from "@/lib/auth";
+import { requireWrite } from "@/lib/auth";
 import { parseDateInput } from "@/lib/format";
 
 const hoursSchema = z.object({
@@ -16,7 +16,7 @@ const hoursSchema = z.object({
 });
 
 export async function addWorkHours(formData: FormData) {
-  await requireUser();
+  await requireWrite();
   const parsed = hoursSchema.safeParse({
     memberId: formData.get("memberId"),
     date: parseDateInput(String(formData.get("date") ?? "")) ?? "",
@@ -30,7 +30,7 @@ export async function addWorkHours(formData: FormData) {
 }
 
 export async function setWorkExemption(formData: FormData) {
-  await requireUser();
+  await requireWrite();
   const memberId = Number(formData.get("memberId"));
   const year = Number(formData.get("year"));
   const duty = String(formData.get("duty") ?? "").trim();
@@ -57,7 +57,7 @@ export async function setWorkExemption(formData: FormData) {
 }
 
 export async function clearWorkExemption(memberId: number, year: number) {
-  await requireUser();
+  await requireWrite();
   db.delete(tables.workExemptions)
     .where(and(eq(tables.workExemptions.memberId, memberId), eq(tables.workExemptions.year, year)))
     .run();
@@ -67,7 +67,7 @@ export async function clearWorkExemption(memberId: number, year: number) {
 }
 
 export async function deleteWorkHours(entryId: number, memberId: number) {
-  await requireUser();
+  await requireWrite();
   db.delete(tables.workHours).where(eq(tables.workHours.id, entryId)).run();
   revalidatePath("/admin/arbeitsstunden");
   redirect(`/admin/arbeitsstunden?mitglied=${memberId}`);

@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { db, tables } from "@/db";
-import { requireUser } from "@/lib/auth";
+import { requireWrite } from "@/lib/auth";
 import { nowIso } from "@/lib/format";
 import { isRichTextEmpty, readRichText } from "@/lib/rich-text";
 
@@ -32,7 +32,7 @@ function revalidate() {
 }
 
 export async function createNews(formData: FormData) {
-  await requireUser();
+  await requireWrite();
   const data = parseNews(formData);
   if (isRichTextEmpty(data.body)) redirect("/admin/news?fehler=text");
   db.insert(tables.news)
@@ -43,7 +43,7 @@ export async function createNews(formData: FormData) {
 }
 
 export async function updateNews(newsId: number, formData: FormData) {
-  await requireUser();
+  await requireWrite();
   const data = parseNews(formData);
   if (isRichTextEmpty(data.body)) redirect(`/admin/news/${newsId}?fehler=text`);
   const existing = db.select().from(tables.news).where(eq(tables.news.id, newsId)).get();
@@ -59,7 +59,7 @@ export async function updateNews(newsId: number, formData: FormData) {
 }
 
 export async function toggleNewsStatus(newsId: number) {
-  await requireUser();
+  await requireWrite();
   const item = db.select().from(tables.news).where(eq(tables.news.id, newsId)).get();
   if (item) {
     const publish = item.status !== "veroeffentlicht";
@@ -72,7 +72,7 @@ export async function toggleNewsStatus(newsId: number) {
 }
 
 export async function deleteNews(newsId: number) {
-  await requireUser();
+  await requireWrite();
   db.delete(tables.news).where(eq(tables.news.id, newsId)).run();
   revalidate();
 }

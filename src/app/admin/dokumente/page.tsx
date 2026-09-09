@@ -5,7 +5,8 @@ import { formatDate } from "@/lib/format";
 import FileDropField from "@/components/FileDropField";
 import FilePreview from "@/components/FilePreview";
 import { publicCategoryLabel, publicCategoryOptions } from "@/lib/categories";
-import { badge, btnPrimary, card, input, label, tableClass, td, th } from "@/lib/ui";
+import SaveButton from "@/components/SaveButton";
+import { badge, card, input, label, tableClass, td, th } from "@/lib/ui";
 import { deleteDocument, toggleDocumentPublic, uploadDocument } from "./actions";
 
 export default async function AdminDokumentePage({ searchParams }: PageProps<"/admin/dokumente">) {
@@ -46,7 +47,7 @@ export default async function AdminDokumentePage({ searchParams }: PageProps<"/a
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" name="isPublic" value="1" /> Öffentlich
           </label>
-          <button className={btnPrimary}>Hochladen</button>
+          <SaveButton pendingLabel="Wird hochgeladen…">Hochladen</SaveButton>
         </div>
         <div className="sm:col-span-2">
           <label className={label}>Datei *</label>

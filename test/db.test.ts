@@ -11,20 +11,20 @@ const { db, tables } = await import("@/db");
 const { nextInvoiceNumber, getSettings, saveSettings } = await import("@/lib/settings");
 const { insertIndexOnEdge, parsePolygon } = await import("@/lib/map");
 const { applyGardenCount, removeGarden } = await import("@/lib/gardens");
-const { collectGardenAttributes, gardenAttributeOptions, parseGardenAttributes, rememberGardenAttribute } = await import("@/lib/garden-attributes");
+const { collectGardenAttributes, gardenAttributeOptions, gardenHasAttribute, parseGardenAttributes, rememberGardenAttribute } = await import("@/lib/garden-attributes");
 const { gardenStatusLabels } = await import("@/lib/ui");
-const { listPublishedNews } = await import("@/lib/site");
+const { boardPhotoUrl, listPublishedNews, moveInList } = await import("@/lib/site");
 
 describe("Seed", () => {
   it("legt keine Gärten an", () => {
     expect(db.select().from(tables.gardens).all()).toHaveLength(0);
   });
 
-  it("legt ein Admin-Konto an", () => {
+  it("legt Admin- und Demo-Konto an", () => {
     const users = db.select().from(tables.users).all();
-    expect(users).toHaveLength(1);
-    expect(users[0].username).toBe("admin");
-    expect(users[0].role).toBe("admin");
+    expect(users).toHaveLength(2);
+    expect(users.find((user) => user.username === "admin")?.role).toBe("admin");
+    expect(users.find((user) => user.username === "demo")?.role).toBe("demo");
   });
 
   it("legt die Briefvorlagen an", async () => {
@@ -132,6 +132,8 @@ describe("Garten-Merkmale", () => {
     expect(rememberGardenAttribute("Wildwuchs")).toBe("bekannt");
     expect(rememberGardenAttribute("")).toBe("leer");
     expect(gardenAttributeOptions().some((item) => item.value === "Wildwuchs")).toBe(true);
+    expect(gardenHasAttribute('["verwahrlost","kein-anbau"]', "verwahrlost")).toBe(true);
+    expect(gardenHasAttribute('["verwahrlost"]', "keine-laube")).toBe(false);
   });
 });
 
@@ -167,5 +169,23 @@ describe("News oben halten", () => {
       .run();
 
     expect(listPublishedNews().map((item) => item.title)).toEqual(["Wichtig", "Neu"]);
+  });
+});
+
+describe("Personen verschieben", () => {
+  it("tauscht die Position, am Rand bleibt die Liste", () => {
+    const people = [{ id: 1 }, { id: 2 }, { id: 3 }];
+    expect(moveInList(people, 2, "up")?.map((item) => item.id)).toEqual([2, 1, 3]);
+    expect(moveInList(people, 2, "down")?.map((item) => item.id)).toEqual([1, 3, 2]);
+    expect(moveInList(people, 1, "up")).toBeNull();
+    expect(moveInList(people, 3, "down")).toBeNull();
+  });
+});
+
+describe("Vorstandsfoto", () => {
+  it("ändert die Bildadresse wenn das Foto ersetzt wird, sonst bleibt das alte im Cache", () => {
+    expect(boardPhotoUrl({ id: 3, photoFile: null })).toBeNull();
+    expect(boardPhotoUrl({ id: 3, photoFile: "alt.jpg" })).toBe("/api/vorstand-foto/3?v=alt.jpg");
+    expect(boardPhotoUrl({ id: 3, photoFile: "neu.png" })).toBe("/api/vorstand-foto/3?v=neu.png");
   });
 });

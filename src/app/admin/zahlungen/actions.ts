@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { asc, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { db, tables } from "@/db";
-import { requireMoneyRole } from "@/lib/auth";
+import { requireMoneyWrite } from "@/lib/auth";
 import { getSettings, nextInvoiceNumber, formatEuro } from "@/lib/settings";
 import { createLetter, getTemplate, germanDate, memberAddress } from "@/lib/letters";
 import { fillTemplate, type InvoiceRow } from "@/lib/pdf";
@@ -37,7 +37,7 @@ const paymentSchema = z.object({
 });
 
 export async function addPayment(formData: FormData) {
-  await requireMoneyRole();
+  await requireMoneyWrite();
   const amountCents = euroToCents(formData.get("amount"));
   const parsed = paymentSchema.safeParse({
     memberId: formData.get("memberId"),
@@ -56,7 +56,7 @@ export async function addPayment(formData: FormData) {
 }
 
 export async function markPaid(paymentId: number, formData: FormData) {
-  await requireMoneyRole();
+  await requireMoneyWrite();
   const payment = db.select().from(tables.payments).where(eq(tables.payments.id, paymentId)).get();
   if (!payment) redirect("/admin/zahlungen");
   const amountCents = euroToCents(formData.get("amount")) ?? payment.amountCents - payment.paidCents;
@@ -73,13 +73,13 @@ export async function markPaid(paymentId: number, formData: FormData) {
 }
 
 export async function reopenPayment(paymentId: number) {
-  await requireMoneyRole();
+  await requireMoneyWrite();
   db.update(tables.payments).set({ paidCents: 0, paidAt: null }).where(eq(tables.payments.id, paymentId)).run();
   revalidatePath("/admin/zahlungen");
 }
 
 export async function deletePayment(paymentId: number) {
-  await requireMoneyRole();
+  await requireMoneyWrite();
   db.delete(tables.payments).where(eq(tables.payments.id, paymentId)).run();
   revalidatePath("/admin/zahlungen");
 }
@@ -87,7 +87,7 @@ export async function deletePayment(paymentId: number) {
 // ---------- Mahnung ----------
 
 export async function dunPayment(paymentId: number) {
-  const user = await requireMoneyRole();
+  const user = await requireMoneyWrite();
   const payment = db.select().from(tables.payments).where(eq(tables.payments.id, paymentId)).get();
   if (!payment || payment.paidCents >= payment.amountCents) redirect("/admin/zahlungen");
   const member = db.select().from(tables.members).where(eq(tables.members.id, payment.memberId)).get();
@@ -128,7 +128,7 @@ export async function dunPayment(paymentId: number) {
 // ---------- Jahres-Rechnungslauf ----------
 
 export async function runAnnualInvoices(formData: FormData) {
-  const user = await requireMoneyRole();
+  const user = await requireMoneyWrite();
   const year = Number(formData.get("year"));
   if (!Number.isInteger(year) || year < 2000 || year > 2100) redirect("/admin/schriftverkehr?fehler=jahr");
 

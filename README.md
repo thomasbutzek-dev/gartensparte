@@ -28,6 +28,7 @@ Vereinsverwaltung für eine Gartensparte plus öffentliche Website – als eine 
 | `admin` | alles, inkl. Benutzer & Einstellungen |
 | `kassenwart` | alles Fachliche inkl. Zahlungen/Rechnungen/Mahnungen |
 | `vorstand` | alles außer Kasse, Benutzer und Einstellungen |
+| `demo` | alles anschauen (inkl. Kasse und Einstellungen), nichts speichern, keine Konten |
 
 ## Entwicklung
 
@@ -39,7 +40,7 @@ npm run lint
 node scripts/smoke.mjs http://localhost:3000   # E2E-Rauchtest gegen laufenden Server
 ```
 
-Beim ersten Start wird automatisch angelegt: Admin-Konto (`admin` / `gartensparte-start`, per `ADMIN_START_PASSWORD` überschreibbar) und Briefvorlagen. Die Gärten legt der Vorstand unter Gärten an (Anzahl 1 bis N).
+Beim ersten Start wird automatisch angelegt: Admin-Konto (`admin` / `gartensparte-start`, per `ADMIN_START_PASSWORD` überschreibbar), Demo-Konto (`demo` / `gartensparte-demo`, per `DEMO_START_PASSWORD` überschreibbar) und Briefvorlagen. Die Gärten legt der Vorstand unter Gärten an (Anzahl 1 bis N). Ein bestehendes System bekommt das Demo-Konto nicht automatisch – dann unter Konten anlegen.
 
 **Nach dem ersten Login sofort unter „Benutzer“ das Admin-Passwort ändern.**
 

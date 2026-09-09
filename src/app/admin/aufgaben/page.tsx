@@ -2,8 +2,9 @@ import { desc } from "drizzle-orm";
 import { db, tables } from "@/db";
 import { requireUser } from "@/lib/auth";
 import { DateField } from "@/components/DateField";
+import SaveButton from "@/components/SaveButton";
 import { formatDate, today } from "@/lib/format";
-import { badge, btnPrimary, card, input, label, tableClass, td, th } from "@/lib/ui";
+import { badge, card, input, label, tableClass, td, th } from "@/lib/ui";
 import { createTask, deleteTask, setTaskStatus } from "./actions";
 
 const statusLabels: Record<string, string> = {
@@ -47,7 +48,7 @@ export default async function AufgabenPage({ searchParams }: PageProps<"/admin/a
           <DateField id="dueDate" name="dueDate" />
         </div>
         <div className="flex items-end">
-          <button className={btnPrimary}>Anlegen</button>
+          <SaveButton>Anlegen</SaveButton>
         </div>
         <div className="sm:col-span-2 lg:col-span-5">
           <label className={label} htmlFor="description">Details</label>

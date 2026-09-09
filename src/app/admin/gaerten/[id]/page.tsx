@@ -7,10 +7,11 @@ import { gardenAttributeLabel, parseGardenAttributes } from "@/lib/garden-attrib
 import { notFound } from "next/navigation";
 import { asc, desc, eq } from "drizzle-orm";
 import { db, tables } from "@/db";
-import { requireUser, canManageMoney } from "@/lib/auth";
+import { requireUser, canSeeMoney } from "@/lib/auth";
 import { DateField } from "@/components/DateField";
 import { euro, formatDate, today } from "@/lib/format";
-import { badge, btn, btnDanger, btnPrimary, card, gardenStatusColors, gardenStatusLabel, gardenStatusLabels, input, label, tableClass, td, th } from "@/lib/ui";
+import SaveButton from "@/components/SaveButton";
+import { badge, btn, btnDanger, card, gardenStatusColors, gardenStatusLabel, gardenStatusLabels, input, label, tableClass, td, th } from "@/lib/ui";
 import {
   addGardenNote,
   changeTenant,
@@ -74,7 +75,7 @@ export default async function GartenAktePage({ params, searchParams }: PageProps
     .limit(5)
     .all();
 
-  const gardenPayments = canManageMoney(user)
+  const gardenPayments = canSeeMoney(user)
     ? db
         .select()
         .from(tables.payments)
@@ -177,7 +178,7 @@ export default async function GartenAktePage({ params, searchParams }: PageProps
             <label className={label} htmlFor="note">Bemerkung</label>
             <textarea id="note" name="note" rows={3} defaultValue={garden.note} className={input} />
           </div>
-          <button className={btnPrimary}>Speichern</button>
+          <SaveButton>Speichern</SaveButton>
         </form>
 
         {/* Pächter */}
@@ -218,7 +219,7 @@ export default async function GartenAktePage({ params, searchParams }: PageProps
               <label className={label} htmlFor="startDate">Pachtbeginn</label>
               <DateField id="startDate" name="startDate" defaultValue={today()} required />
             </div>
-            <button className={btnPrimary}>{currentTenancy ? "Wechsel durchführen" : "Zuordnen"}</button>
+            <SaveButton>{currentTenancy ? "Wechsel durchführen" : "Zuordnen"}</SaveButton>
           </form>
           {history.length > 0 && (
             <div className="border-t border-stone-100 pt-3">
@@ -277,7 +278,9 @@ export default async function GartenAktePage({ params, searchParams }: PageProps
                 <input id="newCategory" name="newCategory" className={input} placeholder="z.B. Versicherung" />
               </div>
             </div>
-            <button className={btn}>Hochladen</button>
+            <SaveButton className={btn} pendingLabel="Wird hochgeladen…">
+              Hochladen
+            </SaveButton>
           </form>
         </section>
 
@@ -332,7 +335,7 @@ export default async function GartenAktePage({ params, searchParams }: PageProps
         {/* Zahlungen & Schreiben */}
         <section className={card}>
           <h2 className="mb-3 text-lg font-semibold">Zahlungen & Schreiben</h2>
-          {canManageMoney(user) && gardenPayments.length > 0 && (
+          {canSeeMoney(user) && gardenPayments.length > 0 && (
             <table className={`${tableClass} mb-4`}>
               <thead>
                 <tr>

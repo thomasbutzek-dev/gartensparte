@@ -3,7 +3,8 @@ import { asc } from "drizzle-orm";
 import { db, tables } from "@/db";
 import { requireUser } from "@/lib/auth";
 import { COMMON_PLACEHOLDERS, letterGroupLabels, type LetterGroup } from "@/lib/letter-catalog";
-import { btn, btnPrimary, card, input, label } from "@/lib/ui";
+import SaveButton from "@/components/SaveButton";
+import { btn, card, input, label } from "@/lib/ui";
 import { createTemplate, deleteTemplate, updateTemplate } from "../actions";
 
 export default async function VorlagenPage({ searchParams }: PageProps<"/admin/schriftverkehr/vorlagen">) {
@@ -55,7 +56,7 @@ export default async function VorlagenPage({ searchParams }: PageProps<"/admin/s
           <label className={label} htmlFor="newBody">Text</label>
           <textarea id="newBody" name="body" rows={6} required className={input} />
         </div>
-        <button className={btnPrimary}>Vorlage anlegen</button>
+        <SaveButton>Vorlage anlegen</SaveButton>
       </form>
 
       {templates.map((template) => (
@@ -82,7 +83,7 @@ export default async function VorlagenPage({ searchParams }: PageProps<"/admin/s
             <label className={label} htmlFor={`body-${template.id}`}>Text</label>
             <textarea id={`body-${template.id}`} name="body" rows={10} defaultValue={template.body} required className={input} />
           </div>
-          <button className={btnPrimary}>Speichern</button>
+          <SaveButton>Speichern</SaveButton>
         </form>
       ))}
     </div>

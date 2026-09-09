@@ -7,7 +7,7 @@ import { redirect } from "next/navigation";
 import { and, asc, eq, gt, isNull } from "drizzle-orm";
 import { z } from "zod";
 import { db, tables, uploadsDir } from "@/db";
-import { requireUser } from "@/lib/auth";
+import { requireWrite } from "@/lib/auth";
 import { nowIso, parseDateInput, today } from "@/lib/format";
 import { categoryFromForm, rememberGardenCategory } from "@/lib/categories";
 import { saveUpload } from "@/lib/files";
@@ -43,7 +43,7 @@ function numberIsTaken(gardenId: number, number: number): boolean {
 }
 
 export async function updateGarden(gardenId: number, formData: FormData) {
-  await requireUser();
+  await requireWrite();
   const data = parseGarden(formData);
   const number = readGardenNumber(formData);
   if (number === null) redirect(`/admin/gaerten/${gardenId}?fehler=nummer`);
@@ -75,7 +75,7 @@ export async function updateGarden(gardenId: number, formData: FormData) {
 }
 
 export async function setGardenCount(formData: FormData) {
-  await requireUser();
+  await requireWrite();
   const count = parseGardenCount(formData.get("count"));
   if (count === null) redirect("/admin/gaerten?fehler=anzahl");
   const result = applyGardenCount(count);
@@ -94,7 +94,7 @@ export async function setGardenCount(formData: FormData) {
 }
 
 export async function deleteGarden(gardenId: number, formData: FormData) {
-  await requireUser();
+  await requireWrite();
   if (String(formData.get("bestaetigt")) !== "ja") {
     redirect(`/admin/gaerten/${gardenId}?fehler=bestaetigung`);
   }
@@ -114,7 +114,7 @@ export async function deleteGarden(gardenId: number, formData: FormData) {
 }
 
 export async function createGarden(formData: FormData) {
-  await requireUser();
+  await requireWrite();
   const number = Number(String(formData.get("number") ?? "").trim());
   if (!Number.isInteger(number) || number < 1 || number > 9999) redirect("/admin/gaerten?fehler=nummer");
   const existing = db.select({ id: tables.gardens.id }).from(tables.gardens).where(eq(tables.gardens.number, number)).get();
@@ -127,7 +127,7 @@ export async function createGarden(formData: FormData) {
 }
 
 export async function createGardenAttribute(formData: FormData) {
-  await requireUser();
+  await requireWrite();
   const result = rememberGardenAttribute(String(formData.get("merkmal") ?? ""));
   revalidatePath("/admin/gaerten");
   revalidatePath("/admin/gaerten/erfassen");
@@ -138,7 +138,7 @@ export async function createGardenAttribute(formData: FormData) {
 
 /** Schnellerfassung: speichern und zum nächsten Garten springen. */
 export async function quickSaveGarden(gardenId: number, formData: FormData) {
-  await requireUser();
+  await requireWrite();
   const data = parseGarden(formData);
   const current = db.select().from(tables.gardens).where(eq(tables.gardens.id, gardenId)).get();
   if (!current) redirect("/admin/gaerten");
@@ -183,8 +183,8 @@ export async function quickSaveGarden(gardenId: number, formData: FormData) {
     .limit(1)
     .get();
   revalidatePath("/admin/gaerten");
-  if (next) redirect(`/admin/gaerten/erfassen?nr=${next.number}`);
-  redirect("/admin/gaerten?erfasst=1");
+  if (next) redirect(`/admin/gaerten/erfassen?nr=${next.number}&ok=1`);
+  redirect("/admin/gaerten?ok=erfasst");
 }
 
 const tenantSchema = z.object({
@@ -194,7 +194,7 @@ const tenantSchema = z.object({
 
 /** Pächterwechsel: offenes Pachtverhältnis beenden, neues anlegen. */
 export async function changeTenant(gardenId: number, formData: FormData) {
-  await requireUser();
+  await requireWrite();
   const data = tenantSchema.parse({
     memberId: formData.get("memberId"),
     startDate: parseDateInput(String(formData.get("startDate") ?? "")) || today(),
@@ -215,7 +215,7 @@ export async function changeTenant(gardenId: number, formData: FormData) {
 
 /** Pachtverhältnis beenden, Garten wird frei. */
 export async function endTenancy(gardenId: number, formData: FormData) {
-  await requireUser();
+  await requireWrite();
   const endDate = parseDateInput(String(formData.get("endDate") ?? "")) || today();
   const open = db
     .select()
@@ -231,24 +231,25 @@ export async function endTenancy(gardenId: number, formData: FormData) {
 }
 
 export async function addGardenNote(gardenId: number, formData: FormData) {
-  const user = await requireUser();
+  const user = await requireWrite();
   const text = String(formData.get("text") ?? "").trim();
   if (!text) redirect(`/admin/gaerten/${gardenId}`);
   db.insert(tables.gardenNotes)
     .values({ gardenId, date: parseDateInput(String(formData.get("date") ?? "")) || today(), authorId: user.id, text: text.slice(0, 5000) })
     .run();
   revalidatePath(`/admin/gaerten/${gardenId}`);
-  redirect(`/admin/gaerten/${gardenId}`);
+  redirect(`/admin/gaerten/${gardenId}?ok=1`);
 }
 
 export async function deleteGardenNote(noteId: number, gardenId: number) {
-  await requireUser();
+  await requireWrite();
   db.delete(tables.gardenNotes).where(eq(tables.gardenNotes.id, noteId)).run();
   revalidatePath(`/admin/gaerten/${gardenId}`);
+  redirect(`/admin/gaerten/${gardenId}?ok=1`);
 }
 
 export async function uploadGardenDocument(gardenId: number, formData: FormData) {
-  const user = await requireUser();
+  const user = await requireWrite();
   const file = formData.get("file") as File | null;
   if (!file) redirect(`/admin/gaerten/${gardenId}?fehler=datei`);
   const saved = await saveUpload(join(uploadsDir, "gaerten"), file);
@@ -267,15 +268,16 @@ export async function uploadGardenDocument(gardenId: number, formData: FormData)
     })
     .run();
   revalidatePath(`/admin/gaerten/${gardenId}`);
-  redirect(`/admin/gaerten/${gardenId}`);
+  redirect(`/admin/gaerten/${gardenId}?ok=1`);
 }
 
 export async function deleteGardenDocument(docId: number, gardenId: number) {
-  await requireUser();
+  await requireWrite();
   const doc = db.select().from(tables.gardenDocuments).where(eq(tables.gardenDocuments.id, docId)).get();
   if (doc) {
     db.delete(tables.gardenDocuments).where(eq(tables.gardenDocuments.id, docId)).run();
     await unlink(join(uploadsDir, "gaerten", doc.fileName)).catch(() => {});
   }
   revalidatePath(`/admin/gaerten/${gardenId}`);
+  redirect(`/admin/gaerten/${gardenId}?ok=1`);
 }

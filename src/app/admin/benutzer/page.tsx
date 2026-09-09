@@ -1,13 +1,15 @@
 import { asc } from "drizzle-orm";
 import { db, tables } from "@/db";
 import { requireAdminRole } from "@/lib/auth";
-import { badge, btnPrimary, card, input, label, tableClass, td, th } from "@/lib/ui";
+import SaveButton from "@/components/SaveButton";
+import { badge, card, input, label, tableClass, td, th } from "@/lib/ui";
 import { createUser, setUserPassword, setUserRole, toggleUserActive } from "./actions";
 
 const roleLabels: Record<string, string> = {
   admin: "Admin (alles)",
   vorstand: "Vorstand (ohne Kasse)",
   kassenwart: "Kassenwart (mit Kasse)",
+  demo: "Demo (nur anschauen)",
 };
 
 export default async function BenutzerPage({ searchParams }: PageProps<"/admin/benutzer">) {
@@ -49,7 +51,7 @@ export default async function BenutzerPage({ searchParams }: PageProps<"/admin/b
           </select>
         </div>
         <div className="flex items-end">
-          <button className={btnPrimary}>Anlegen</button>
+          <SaveButton>Anlegen</SaveButton>
         </div>
       </form>
 

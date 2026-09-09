@@ -3,8 +3,9 @@ import { db, tables } from "@/db";
 import { requireUser } from "@/lib/auth";
 import { getMapBackgroundFile, parsePolygon } from "@/lib/map";
 import { getSettings } from "@/lib/settings";
-import { btn, btnPrimary, card, gardenStatusLabels, gardenStatusMapColors } from "@/lib/ui";
+import { btn, card, gardenStatusLabels, gardenStatusMapColors } from "@/lib/ui";
 import FileDropField from "@/components/FileDropField";
+import SaveButton from "@/components/SaveButton";
 import GardenMap from "@/components/GardenMap";
 import MapEditor from "./MapEditor";
 import { updatePublicLageplanVisibility, uploadMapBackground } from "./actions";
@@ -79,7 +80,7 @@ export default async function KartePage({ searchParams }: PageProps<"/admin/kart
             </span>
           </span>
         </label>
-        <button className={btnPrimary}>Speichern</button>
+        <SaveButton>Speichern</SaveButton>
       </form>
       <p className="text-sm text-stone-500">
         {drawnCount} von {gardens.length} Parzellen eingezeichnet.

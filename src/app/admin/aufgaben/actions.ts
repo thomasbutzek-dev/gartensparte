@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { db, tables } from "@/db";
-import { requireUser } from "@/lib/auth";
+import { requireWrite } from "@/lib/auth";
 import { nowIso, parseDateInput } from "@/lib/format";
 
 const taskSchema = z.object({
@@ -16,7 +16,7 @@ const taskSchema = z.object({
 });
 
 export async function createTask(formData: FormData) {
-  await requireUser();
+  await requireWrite();
   const data = taskSchema.parse({
     title: formData.get("title"),
     description: formData.get("description"),
@@ -31,14 +31,15 @@ export async function createTask(formData: FormData) {
 }
 
 export async function setTaskStatus(taskId: number, formData: FormData) {
-  await requireUser();
+  await requireWrite();
   const status = z.enum(["offen", "in_arbeit", "erledigt"]).parse(formData.get("status"));
   db.update(tables.tasks).set({ status }).where(eq(tables.tasks.id, taskId)).run();
   revalidatePath("/admin/aufgaben");
+  redirect("/admin/aufgaben?ok=1");
 }
 
 export async function deleteTask(taskId: number) {
-  await requireUser();
+  await requireWrite();
   db.delete(tables.tasks).where(eq(tables.tasks.id, taskId)).run();
   revalidatePath("/admin/aufgaben");
 }

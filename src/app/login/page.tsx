@@ -1,15 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth";
 import { btnPrimary, card, input, label } from "@/lib/ui";
 import { loginAction } from "./actions";
 
 export const metadata: Metadata = { title: "Anmeldung" };
 
+const roleLabels = {
+  admin: "Administrator",
+  vorstand: "Vorstand",
+  kassenwart: "Kassenwart",
+  demo: "Demo",
+} as const;
+
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   const user = await getSessionUser();
-  if (user) redirect("/admin");
   const params = await searchParams;
 
   return (
@@ -19,6 +24,16 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
           <h1 className="text-xl font-bold">Vorstand-Anmeldung</h1>
           <p className="mt-1 text-sm text-stone-500">Verwaltung der Gartensparte</p>
         </div>
+        {user && (
+          <p className="rounded-md bg-amber-100 px-4 py-3 text-sm text-amber-900">
+            Gerade angemeldet als {user.name}
+            {user.role === "demo" ? " (Demo, nur anschauen)" : ` (${roleLabels[user.role]})`}.
+            Zum Wechseln einfach unten mit dem anderen Konto anmelden.{" "}
+            <Link href="/admin" className="font-medium underline">
+              Zur Verwaltung
+            </Link>
+          </p>
+        )}
         {params.fehler === "gesperrt" && (
           <p className="rounded-md bg-red-100 px-4 py-3 text-sm text-red-800">
             Zu viele Fehlversuche. Bitte in 15 Minuten erneut versuchen.

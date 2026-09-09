@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { db, tables } from "@/db";
-import { requireUser } from "@/lib/auth";
+import { requireWrite } from "@/lib/auth";
 import { parseDateTimeInput } from "@/lib/format";
 import { readRichText } from "@/lib/rich-text";
 
@@ -36,7 +36,7 @@ function revalidate() {
 }
 
 export async function createEvent(formData: FormData) {
-  await requireUser();
+  await requireWrite();
   const data = parseEvent(formData);
   db.insert(tables.events).values({ ...data, endDate: data.endDate || null }).run();
   revalidate();
@@ -44,7 +44,7 @@ export async function createEvent(formData: FormData) {
 }
 
 export async function updateEvent(eventId: number, formData: FormData) {
-  await requireUser();
+  await requireWrite();
   const data = parseEvent(formData);
   db.update(tables.events).set({ ...data, endDate: data.endDate || null }).where(eq(tables.events.id, eventId)).run();
   revalidate();
@@ -52,7 +52,7 @@ export async function updateEvent(eventId: number, formData: FormData) {
 }
 
 export async function toggleEventStatus(eventId: number) {
-  await requireUser();
+  await requireWrite();
   const event = db.select().from(tables.events).where(eq(tables.events.id, eventId)).get();
   if (event) {
     db.update(tables.events)
@@ -64,7 +64,7 @@ export async function toggleEventStatus(eventId: number) {
 }
 
 export async function deleteEvent(eventId: number) {
-  await requireUser();
+  await requireWrite();
   db.delete(tables.events).where(eq(tables.events.id, eventId)).run();
   revalidate();
 }

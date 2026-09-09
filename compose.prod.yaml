@@ -4,6 +4,7 @@
 #
 # Nötige Variablen (Docker Manager "Environment" oder .env):
 #   ADMIN_START_PASSWORD=geheim        (nur beim allerersten Start relevant)
+#   DEMO_START_PASSWORD=geheim         (nur beim allerersten Start relevant)
 #   IMAGE_TAG=latest                   (optional)
 name: gartensparte
 
@@ -20,6 +21,7 @@ services:
       - gartensparte_data:/app/data
     environment:
       ADMIN_START_PASSWORD: ${ADMIN_START_PASSWORD:-gartensparte-start}
+      DEMO_START_PASSWORD: ${DEMO_START_PASSWORD:-gartensparte-demo}
     security_opt:
       - no-new-privileges:true
     labels:

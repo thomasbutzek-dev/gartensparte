@@ -61,3 +61,21 @@ export function getGalleryImage(id: number) {
 export function getBoardMember(id: number) {
   return db.select().from(tables.boardMembers).where(eq(tables.boardMembers.id, id)).get();
 }
+
+/** Schiebt einen Eintrag um eine Position. Null, wenn er schon am Rand steht. */
+export function moveInList<T extends { id: number }>(items: T[], id: number, direction: "up" | "down"): T[] | null {
+  const from = items.findIndex((item) => item.id === id);
+  if (from < 0) return null;
+  const to = direction === "up" ? from - 1 : from + 1;
+  if (to < 0 || to >= items.length) return null;
+  const next = items.slice();
+  const [item] = next.splice(from, 1);
+  next.splice(to, 0, item);
+  return next;
+}
+
+/** Dateiname in der Adresse, damit nach einem neuen Foto nicht das alte aus dem Cache kommt. */
+export function boardPhotoUrl(member: { id: number; photoFile?: string | null }): string | null {
+  if (!member.photoFile) return null;
+  return `/api/vorstand-foto/${member.id}?v=${encodeURIComponent(member.photoFile)}`;
+}

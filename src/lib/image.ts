@@ -46,3 +46,36 @@ export async function shrinkUploadedImage(bytes: Buffer): Promise<ShrunkImage | 
     return null;
   }
 }
+
+/** PNG in einer ICO-Hülle, damit /favicon.ico das Logo ausliefert. */
+export function pngToIco(png: Buffer): Buffer {
+  const header = Buffer.alloc(22);
+  header.writeUInt16LE(0, 0);
+  header.writeUInt16LE(1, 2);
+  header.writeUInt16LE(1, 4);
+  header.writeUInt8(32, 6);
+  header.writeUInt8(32, 7);
+  header.writeUInt8(0, 8);
+  header.writeUInt8(0, 9);
+  header.writeUInt16LE(1, 10);
+  header.writeUInt16LE(32, 12);
+  header.writeUInt32LE(png.length, 14);
+  header.writeUInt32LE(22, 18);
+  return Buffer.concat([header, png]);
+}
+
+/** Quadratisches PNG für Tab und Homescreen. */
+export async function resizeLogoToIcon(bytes: Buffer, size: number): Promise<Buffer | null> {
+  try {
+    return await sharp(bytes, { failOn: "none" })
+      .rotate()
+      .resize(size, size, {
+        fit: "contain",
+        background: { r: 0, g: 0, b: 0, alpha: 0 },
+      })
+      .png()
+      .toBuffer();
+  } catch {
+    return null;
+  }
+}

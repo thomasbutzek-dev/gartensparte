@@ -61,7 +61,10 @@ export default function AdminNav({ groups, userLabel }: { groups: AdminNavGroup[
             })}
           </div>
         ))}
-        <form action={logoutAction} className="mt-6">
+        <Link href="/" className="mt-4 block rounded-md px-3 py-2 text-green-200 hover:bg-green-800">
+          Zur Website
+        </Link>
+        <form action={logoutAction} data-demo-ok className="mt-1">
           <button className="w-full rounded-md px-3 py-2 text-left text-green-200 hover:bg-green-800">
             Abmelden
           </button>

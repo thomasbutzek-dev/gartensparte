@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { asc, desc, eq, isNull } from "drizzle-orm";
 import { db, tables } from "@/db";
-import { requireUser, canManageMoney } from "@/lib/auth";
+import { requireUser, canSeeMoney } from "@/lib/auth";
 import { formatDate } from "@/lib/format";
 import { archiveTypeLabels } from "@/lib/letter-catalog";
 import { btn, btnPrimary, card, input, label, tableClass, td, th } from "@/lib/ui";
@@ -105,7 +105,7 @@ export default async function SchriftverkehrPage({ searchParams }: PageProps<"/a
         <Link href="/admin/zahlungen" className="text-green-700 hover:underline">Zahlungen</Link> anstoßen.
       </p>
 
-      {canManageMoney(user) && (
+      {canSeeMoney(user) && (
         <section id="rechnungslauf" className={`${card} space-y-3`}>
           <h2 className="text-lg font-semibold">Jahresrechnungen</h2>
           <p className="text-sm text-stone-500">

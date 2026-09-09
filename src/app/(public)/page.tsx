@@ -4,7 +4,7 @@ import Link from "next/link";
 import { asc, eq } from "drizzle-orm";
 import { db, tables } from "@/db";
 import { boardExtraText, getSettings, hasMapPoint, officeHoursLabel, osmEmbedUrl } from "@/lib/settings";
-import { addressLines, freeGardenCtaLabel, gardenCounts, listBoardMembers, listGalleryImages, listPublishedNews, mapsSearchUrl } from "@/lib/site";
+import { addressLines, boardPhotoUrl, freeGardenCtaLabel, gardenCounts, listBoardMembers, listGalleryImages, listPublishedNews, mapsSearchUrl } from "@/lib/site";
 import { formatDate, formatDateTime, today } from "@/lib/format";
 import { badge, card, photoMuted, photoScrim, photoText, photoWash } from "@/lib/ui";
 import SiteContainer from "@/components/SiteContainer";
@@ -120,11 +120,13 @@ export default function StartPage() {
               <RichText html={boardExtraText(settings)} className="text-sm text-stone-600" />
             ) : (
               <ul className="space-y-3">
-                {board.map((member) => (
+                {board.map((member) => {
+                  const photo = boardPhotoUrl(member);
+                  return (
                   <li key={member.id} className="flex items-center gap-3">
-                    {member.photoFile ? (
+                    {photo ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={`/api/vorstand-foto/${member.id}`} alt="" className="h-12 w-12 rounded-full object-cover" />
+                      <img src={photo} alt="" className="h-12 w-12 rounded-full object-cover" />
                     ) : (
                       <span className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-sm font-semibold text-green-800">
                         {member.name.slice(0, 1)}
@@ -135,7 +137,8 @@ export default function StartPage() {
                       {member.role ? <span className="text-sm text-stone-500">{member.role}</span> : null}
                     </span>
                   </li>
-                ))}
+                  );
+                })}
               </ul>
             )}
             {officeHoursLabel(settings) ? (

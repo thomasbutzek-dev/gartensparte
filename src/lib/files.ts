@@ -47,6 +47,19 @@ const allowedImageTypes: Record<string, string> = {
   "image/webp": ".webp",
 };
 
+const imageTypeByExtension: Record<string, string> = {
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".png": "image/png",
+  ".webp": "image/webp",
+};
+
+/** Dateityp aus dem Browser oder, wenn der fehlt, aus der Endung. */
+export function imageTypeFromFile(file: File): string | null {
+  if (allowedImageTypes[file.type]) return file.type;
+  return imageTypeByExtension[extname(file.name).toLowerCase()] ?? null;
+}
+
 /** Bild-Upload (JPG, PNG, WebP) für Logo, Hero, Galerie, Vorstandsfotos. */
 export async function saveImageUpload(
   directory: string,
@@ -54,7 +67,7 @@ export async function saveImageUpload(
 ): Promise<{ fileName: string; mimeType: string } | { error: string }> {
   if (!file || file.size === 0) return { error: "Keine Datei ausgewählt." };
   if (file.size > MAX_UPLOAD_BYTES) return { error: "Die Datei ist zu groß (max. 15 MB)." };
-  if (!allowedImageTypes[file.type]) return { error: "Erlaubt sind JPG, PNG und WebP." };
+  if (!imageTypeFromFile(file)) return { error: "Erlaubt sind JPG, PNG und WebP." };
   return writeImage(directory, Buffer.from(await file.arrayBuffer()));
 }
 

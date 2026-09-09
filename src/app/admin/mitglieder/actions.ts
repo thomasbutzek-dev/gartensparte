@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { db, tables } from "@/db";
-import { requireUser, requireAdminRole } from "@/lib/auth";
+import { requireWrite, requireAdminRole } from "@/lib/auth";
 import { parseDateInput, today } from "@/lib/format";
 
 const memberSchema = z.object({
@@ -35,7 +35,7 @@ function parseMember(formData: FormData) {
 }
 
 export async function createMember(formData: FormData) {
-  await requireUser();
+  await requireWrite();
   const data = parseMember(formData);
   const inserted = db
     .insert(tables.members)
@@ -43,11 +43,11 @@ export async function createMember(formData: FormData) {
     .returning({ id: tables.members.id })
     .get();
   revalidatePath("/admin/mitglieder");
-  redirect(`/admin/mitglieder/${inserted.id}`);
+  redirect(`/admin/mitglieder/${inserted.id}?ok=1`);
 }
 
 export async function updateMember(memberId: number, formData: FormData) {
-  await requireUser();
+  await requireWrite();
   const data = parseMember(formData);
   db.update(tables.members)
     .set({ ...data, memberSince: data.memberSince || null })
@@ -58,13 +58,14 @@ export async function updateMember(memberId: number, formData: FormData) {
 }
 
 export async function setMemberStatus(memberId: number, formData: FormData) {
-  await requireUser();
+  await requireWrite();
   const status = String(formData.get("status")) === "ausgeschieden" ? "ausgeschieden" : "aktiv";
   db.update(tables.members)
     .set({ status, leftAt: status === "ausgeschieden" ? today() : null })
     .where(eq(tables.members.id, memberId))
     .run();
   revalidatePath(`/admin/mitglieder/${memberId}`);
+  redirect(`/admin/mitglieder/${memberId}?ok=1`);
 }
 
 /** Endgültig löschen (nur Admin, nur ohne Pachtverhältnisse/Zahlungen). */

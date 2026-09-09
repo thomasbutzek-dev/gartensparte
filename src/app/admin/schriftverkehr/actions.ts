@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { db, lettersDir, tables } from "@/db";
-import { requireUser } from "@/lib/auth";
+import { requireWrite } from "@/lib/auth";
 import { getSettings } from "@/lib/settings";
 import { createLetter, getTemplateById, germanDate, writeFinalPdf } from "@/lib/letters";
 import { archiveTypeFor } from "@/lib/letter-catalog";
@@ -30,7 +30,7 @@ function draftValues(formData: FormData): Record<string, string> {
 }
 
 export async function startLetter(formData: FormData) {
-  const user = await requireUser();
+  const user = await requireWrite();
   const template = getTemplateById(Number(formData.get("templateId")));
   if (!template) redirect("/admin/schriftverkehr?fehler=vorlage");
 
@@ -69,7 +69,7 @@ export async function startLetter(formData: FormData) {
 }
 
 export async function saveDraft(letterId: number, formData: FormData) {
-  await requireUser();
+  await requireWrite();
   const letter = db.select().from(tables.letters).where(eq(tables.letters.id, letterId)).get();
   if (!letter || letter.status !== "entwurf") redirect("/admin/schriftverkehr");
   const subject = String(formData.get("subject") ?? "").trim();
@@ -81,7 +81,7 @@ export async function saveDraft(letterId: number, formData: FormData) {
 }
 
 export async function finalizeLetter(letterId: number, formData: FormData) {
-  const user = await requireUser();
+  const user = await requireWrite();
   const subject = String(formData.get("subject") ?? "").trim();
   const body = String(formData.get("body") ?? "").trim();
   if (!subject || !body) redirect(`/admin/schriftverkehr/${letterId}?fehler=leer`);
@@ -135,7 +135,7 @@ export async function finalizeLetter(letterId: number, formData: FormData) {
 }
 
 export async function deleteLetter(letterId: number) {
-  await requireUser();
+  await requireWrite();
   const letter = db.select().from(tables.letters).where(eq(tables.letters.id, letterId)).get();
   if (letter) {
     db.update(tables.payments).set({ letterId: null }).where(eq(tables.payments.letterId, letterId)).run();
@@ -146,7 +146,7 @@ export async function deleteLetter(letterId: number) {
 }
 
 export async function updateTemplate(templateId: number, formData: FormData) {
-  await requireUser();
+  await requireWrite();
   const subject = String(formData.get("subject") ?? "").trim();
   const body = String(formData.get("body") ?? "").trim();
   const name = String(formData.get("name") ?? "").trim();
@@ -160,7 +160,7 @@ export async function updateTemplate(templateId: number, formData: FormData) {
 }
 
 export async function createTemplate(formData: FormData) {
-  await requireUser();
+  await requireWrite();
   const name = String(formData.get("name") ?? "").trim();
   const subject = String(formData.get("subject") ?? "").trim();
   const body = String(formData.get("body") ?? "").trim();
@@ -187,7 +187,7 @@ export async function createTemplate(formData: FormData) {
 }
 
 export async function deleteTemplate(templateId: number) {
-  await requireUser();
+  await requireWrite();
   const template = db.select().from(tables.letterTemplates).where(eq(tables.letterTemplates.id, templateId)).get();
   if (template && !template.locked) {
     db.delete(tables.letterTemplates).where(eq(tables.letterTemplates.id, templateId)).run();

@@ -5,7 +5,8 @@ import { requireUser } from "@/lib/auth";
 import { getSettings } from "@/lib/settings";
 import { DateField } from "@/components/DateField";
 import { euro, formatDate, today } from "@/lib/format";
-import { btn, btnPrimary, card, input, label, tableClass, td, th } from "@/lib/ui";
+import SaveButton from "@/components/SaveButton";
+import { btn, card, input, label, tableClass, td, th } from "@/lib/ui";
 import { creditedWorkHours, listWorkDutyOptions, workExemptionsForYear } from "@/lib/work-hours";
 import DutyForm from "./DutyForm";
 import { addWorkHours, clearWorkExemption, deleteWorkHours } from "./actions";
@@ -90,7 +91,7 @@ export default async function ArbeitsstundenPage({ searchParams }: PageProps<"/a
           <label className={label} htmlFor="activity">Tätigkeit</label>
           <input id="activity" name="activity" placeholder="z.B. Gemeinschaftsarbeit Wege" className={input} />
         </div>
-        <button className={btnPrimary}>Erfassen</button>
+        <SaveButton>Erfassen</SaveButton>
       </form>
 
       <section className={`${card} space-y-3`}>

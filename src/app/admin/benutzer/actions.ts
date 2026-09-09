@@ -7,6 +7,7 @@ import { z } from "zod";
 import { db, tables } from "@/db";
 import { requireAdminRole, hashPassword } from "@/lib/auth";
 import { nowIso } from "@/lib/format";
+import { roles } from "@/lib/roles";
 
 const userSchema = z.object({
   name: z.string().trim().min(1).max(100),
@@ -15,7 +16,7 @@ const userSchema = z.object({
     .trim()
     .toLowerCase()
     .regex(/^[a-z0-9._-]{3,50}$/, "3–50 Zeichen, nur Kleinbuchstaben, Ziffern, Punkt, Minus, Unterstrich"),
-  role: z.enum(["admin", "vorstand", "kassenwart"]),
+  role: z.enum(roles),
 });
 
 export async function createUser(formData: FormData) {
@@ -48,7 +49,7 @@ export async function setUserPassword(userId: number, formData: FormData) {
 
 export async function setUserRole(userId: number, formData: FormData) {
   const admin = await requireAdminRole();
-  const role = z.enum(["admin", "vorstand", "kassenwart"]).parse(formData.get("role"));
+  const role = z.enum(roles).parse(formData.get("role"));
   if (userId === admin.id) redirect("/admin/benutzer?fehler=selbst");
   db.update(tables.users).set({ role }).where(eq(tables.users.id, userId)).run();
   revalidatePath("/admin/benutzer");

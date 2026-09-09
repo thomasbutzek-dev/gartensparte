@@ -7,7 +7,8 @@ import { DateField } from "@/components/DateField";
 import { today } from "@/lib/format";
 import GardenMerkmaleFields from "@/components/GardenMerkmaleFields";
 import { parseGardenAttributes } from "@/lib/garden-attributes";
-import { btn, btnPrimary, card, gardenStatusLabels, input, label } from "@/lib/ui";
+import SaveButton from "@/components/SaveButton";
+import { btn, card, gardenStatusLabels, input, label } from "@/lib/ui";
 import { quickSaveGarden } from "../actions";
 
 export default async function SchnellerfassungPage({ searchParams }: PageProps<"/admin/gaerten/erfassen">) {
@@ -43,6 +44,7 @@ export default async function SchnellerfassungPage({ searchParams }: PageProps<"
         Daten eintragen und „Speichern & weiter“ – der nächste Garten öffnet sich automatisch.
         Fehlt ein Pächter in der Liste? <Link href="/admin/mitglieder/neu" className="text-green-700 hover:underline">Mitglied anlegen</Link> und danach hier fortsetzen.
       </p>
+      {params.ok && <p className="rounded-md bg-green-100 px-4 py-3 text-green-800">Gespeichert. Nächster Garten.</p>}
       {params.fehler === "nummer" && (
         <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">Bitte eine ganze Nummer zwischen 1 und 9999 eingeben.</p>
       )}
@@ -94,7 +96,7 @@ export default async function SchnellerfassungPage({ searchParams }: PageProps<"
           <textarea id="note" name="note" rows={2} defaultValue={garden.note} className={input} />
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <button className={btnPrimary}>Speichern & weiter →</button>
+          <SaveButton>Speichern & weiter →</SaveButton>
           <Link href={`/admin/gaerten/${garden.id}`} className={btn}>Zur vollständigen Akte</Link>
           {garden.number > 1 && (
             <Link href={`/admin/gaerten/erfassen?nr=${garden.number - 1}`} className="text-sm text-stone-500 hover:underline">

@@ -3,6 +3,7 @@ import { and, asc, desc, eq, isNull } from "drizzle-orm";
 import { db, tables } from "@/db";
 import { requireUser } from "@/lib/auth";
 import { DateField } from "@/components/DateField";
+import SaveButton from "@/components/SaveButton";
 import { formatDate, today } from "@/lib/format";
 import { btn, btnPrimary, card, input, label, tableClass, td, th } from "@/lib/ui";
 import { saveReading } from "./actions";
@@ -65,10 +66,10 @@ export default async function AblesenPage({ searchParams }: PageProps<"/admin/ab
               <input id="note" name="note" className={input} />
             </div>
             <div className="flex flex-wrap gap-3">
-              <button name="weiter" value="1" className={`${btnPrimary} flex-1 justify-center py-3`}>
+              <SaveButton name="weiter" value="1" className={`${btnPrimary} flex-1 justify-center py-3`}>
                 Speichern & nächster Garten
-              </button>
-              <button className={btn}>Nur speichern</button>
+              </SaveButton>
+              <SaveButton className={btn}>Nur speichern</SaveButton>
             </div>
           </form>
           <p className="text-center text-sm">

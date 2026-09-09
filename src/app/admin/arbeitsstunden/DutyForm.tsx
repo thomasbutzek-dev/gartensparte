@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { btnPrimary, input, label } from "@/lib/ui";
+import SaveButton from "@/components/SaveButton";
+import { input, label } from "@/lib/ui";
 import { setWorkExemption } from "./actions";
 
 export default function DutyForm({
@@ -55,7 +56,7 @@ export default function DutyForm({
           />
         </div>
       )}
-      <button className={btnPrimary}>Für {year} als erfüllt merken</button>
+      <SaveButton>Für {year} als erfüllt merken</SaveButton>
     </form>
   );
 }

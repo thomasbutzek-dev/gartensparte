@@ -22,6 +22,19 @@ export function ensureSeeded(db: BetterSQLite3Database<typeof schema>) {
       })
       .onConflictDoNothing()
       .run();
+
+    const demoPassword = process.env.DEMO_START_PASSWORD || "gartensparte-demo";
+    db.insert(schema.users)
+      .values({
+        name: "Demo",
+        username: "demo",
+        passwordHash: hashPassword(demoPassword),
+        role: "demo",
+        active: true,
+        createdAt: now,
+      })
+      .onConflictDoNothing()
+      .run();
   }
 
   for (const template of LETTER_CATALOG) {

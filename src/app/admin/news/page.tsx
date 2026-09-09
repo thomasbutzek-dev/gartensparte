@@ -5,7 +5,8 @@ import { requireUser } from "@/lib/auth";
 import { formatDate } from "@/lib/format";
 import NewsPinnedField from "@/components/NewsPinnedField";
 import RichTextEditor from "@/components/RichTextEditor";
-import { badge, btnPrimary, card, input, label, tableClass, td, th } from "@/lib/ui";
+import SaveButton from "@/components/SaveButton";
+import { badge, card, input, label, tableClass, td, th } from "@/lib/ui";
 import { createNews, deleteNews, toggleNewsStatus } from "./actions";
 
 export default async function AdminNewsPage({ searchParams }: PageProps<"/admin/news">) {
@@ -89,7 +90,7 @@ export default async function AdminNewsPage({ searchParams }: PageProps<"/admin/
             </select>
           </div>
           <NewsPinnedField />
-          <button className={btnPrimary}>Anlegen</button>
+          <SaveButton>Anlegen</SaveButton>
         </form>
       </div>
     </div>

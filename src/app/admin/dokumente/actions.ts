@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { db, tables, uploadsDir } from "@/db";
-import { requireUser } from "@/lib/auth";
+import { requireWrite } from "@/lib/auth";
 import { categoryFromForm, rememberPublicCategory } from "@/lib/categories";
 import { saveUpload } from "@/lib/files";
 import { nowIso } from "@/lib/format";
@@ -17,7 +17,7 @@ function revalidate() {
 }
 
 export async function uploadDocument(formData: FormData) {
-  await requireUser();
+  await requireWrite();
   const file = formData.get("file") as File | null;
   const title = String(formData.get("title") ?? "").trim();
   if (!file || !title) redirect("/admin/dokumente?fehler=eingabe");
@@ -41,7 +41,7 @@ export async function uploadDocument(formData: FormData) {
 }
 
 export async function toggleDocumentPublic(documentId: number) {
-  await requireUser();
+  await requireWrite();
   const doc = db.select().from(tables.documents).where(eq(tables.documents.id, documentId)).get();
   if (doc) {
     db.update(tables.documents).set({ isPublic: !doc.isPublic }).where(eq(tables.documents.id, documentId)).run();
@@ -50,7 +50,7 @@ export async function toggleDocumentPublic(documentId: number) {
 }
 
 export async function deleteDocument(documentId: number) {
-  await requireUser();
+  await requireWrite();
   const doc = db.select().from(tables.documents).where(eq(tables.documents.id, documentId)).get();
   if (doc) {
     db.delete(tables.documents).where(eq(tables.documents.id, documentId)).run();

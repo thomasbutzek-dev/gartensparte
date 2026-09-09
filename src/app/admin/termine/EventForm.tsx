@@ -1,6 +1,7 @@
 import { DateTimeField } from "@/components/DateField";
 import RichTextEditor from "@/components/RichTextEditor";
-import { btnPrimary, input, label } from "@/lib/ui";
+import SaveButton from "@/components/SaveButton";
+import { input, label } from "@/lib/ui";
 
 type EventValues = {
   title?: string;
@@ -43,7 +44,7 @@ export default function EventForm({ values = {}, submitLabel }: { values?: Event
           <option value="veroeffentlicht">Veröffentlicht (auf der Website)</option>
         </select>
       </div>
-      <button className={btnPrimary}>{submitLabel}</button>
+      <SaveButton>{submitLabel}</SaveButton>
     </>
   );
 }

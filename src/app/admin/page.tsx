@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { asc, eq } from "drizzle-orm";
 import { db, tables } from "@/db";
-import { requireUser, canManageMoney } from "@/lib/auth";
+import { requireUser, canSeeMoney } from "@/lib/auth";
 import { euro, formatDate, formatDateTime, today } from "@/lib/format";
 import { gardenCountsFrom } from "@/lib/site";
 import { card } from "@/lib/ui";
@@ -31,7 +31,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/admin"
     { label: "Neue Nachrichten", value: String(unreadInquiries.length), href: "/admin/posteingang" },
     { label: "Offene Warteliste", value: String(openApplicants.length), href: "/admin/warteliste" },
     { label: "Offene Aufgaben", value: String(openTasks.length), href: "/admin/aufgaben" },
-    ...(canManageMoney(user)
+    ...(canSeeMoney(user)
       ? [{ label: "Überfällige Zahlungen", value: `${overdue.length} (${euro(overdueCents)})`, href: "/admin/zahlungen?filter=ueberfaellig" }]
       : []),
   ];
@@ -41,7 +41,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/admin"
     { href: "/admin/website", title: "Website pflegen", text: "Texte, Fotos, Anfahrt, Vorstand." },
     { href: "/admin/termine", title: "Termin eintragen", text: "Erscheint auf der Startseite." },
     { href: "/admin/news", title: "News schreiben", text: "Zuerst als Entwurf, dann veröffentlichen." },
-    ...(canManageMoney(user)
+    ...(canSeeMoney(user)
       ? [{ href: "/admin/schriftverkehr", title: "Brief schreiben", text: "Jahresrechnung, Kündigung, Rundschreiben." }]
       : []),
     { href: "/admin/dokumente", title: "Dokument ablegen", text: "Satzung, Formulare, intern oder öffentlich." },
@@ -55,6 +55,11 @@ export default async function DashboardPage({ searchParams }: PageProps<"/admin"
       </div>
       {params.fehler === "rechte" && (
         <p className="rounded-md bg-amber-100 px-4 py-3 text-amber-800">Dafür fehlen Ihrem Konto die Rechte.</p>
+      )}
+      {params.fehler === "demo" && (
+        <p className="rounded-md bg-amber-100 px-4 py-3 text-amber-800">
+          Im Demo-Modus wird nichts gespeichert. Sie können alles anschauen.
+        </p>
       )}
 
       <section>
@@ -132,7 +137,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/admin"
         </Link>
       </section>
 
-      {canManageMoney(user) && overdue.length > 0 && (
+      {canSeeMoney(user) && overdue.length > 0 && (
         <section className={card}>
           <h2 className="mb-3 text-lg font-semibold">Überfällige Zahlungen</h2>
           <ul className="space-y-2 text-sm">

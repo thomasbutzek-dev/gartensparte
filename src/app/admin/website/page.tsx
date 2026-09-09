@@ -1,16 +1,19 @@
 import FileDropField from "@/components/FileDropField";
 import LocationEditor from "@/components/LocationEditor";
 import RichTextEditor from "@/components/RichTextEditor";
+import SaveButton from "@/components/SaveButton";
+import SaveNotice from "@/components/SaveNotice";
 import { requireUser } from "@/lib/auth";
 import { hasMapPreviewFile } from "@/lib/map-preview";
 import { getSettings } from "@/lib/settings";
-import { listBoardMembers, listGalleryImages } from "@/lib/site";
-import { btn, btnDanger, btnPrimary, card, input, label } from "@/lib/ui";
+import { boardPhotoUrl, listBoardMembers, listGalleryImages } from "@/lib/site";
+import { btn, btnDanger, card, input, label } from "@/lib/ui";
 import {
   addBoardMember,
   addGalleryImage,
   deleteBoardMember,
   deleteGalleryImage,
+  moveBoardMember,
   removeHero,
   removeLogo,
   removeSceneImage,
@@ -32,11 +35,20 @@ export default async function WebsitePage({ searchParams }: PageProps<"/admin/we
 
   return (
     <div className="mx-auto max-w-4xl space-y-8">
+      <SaveNotice
+        ok={typeof params.ok === "string" ? params.ok : null}
+        fehler={typeof params.fehler === "string" ? params.fehler : null}
+      />
       <div>
         <h1 className="text-2xl font-bold">Website</h1>
         <p className="mt-1 text-sm text-stone-500">
           Alles, was Besucher auf der öffentlichen Seite sehen. Ohne Bilder bleibt die Startseite schlicht, aber vollständig.
         </p>
+        {params.ok && params.ok !== "vorstand" ? (
+          <p role="status" className="mt-3 rounded-md bg-green-100 px-4 py-3 text-green-800">
+            Gespeichert.
+          </p>
+        ) : null}
         <p className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-sm">
           <a href="#verein" className="text-green-700 hover:underline">Adresse</a>
           <a href="#texte" className="text-green-700 hover:underline">Texte</a>
@@ -47,7 +59,6 @@ export default async function WebsitePage({ searchParams }: PageProps<"/admin/we
         </p>
       </div>
 
-      {params.ok && <p className="rounded-md bg-green-100 px-4 py-3 text-green-800">Gespeichert.</p>}
       {params.fehler === "bild" && (
         <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">Upload fehlgeschlagen. Erlaubt sind JPG, PNG und WebP bis 15 MB.</p>
       )}
@@ -90,7 +101,7 @@ export default async function WebsitePage({ searchParams }: PageProps<"/admin/we
             <input id="vereinTelefon" name="vereinTelefon" defaultValue={settings.vereinTelefon} className={input} />
           </div>
         </div>
-        <button className={btnPrimary}>Adresse speichern</button>
+        <SaveButton>Adresse speichern</SaveButton>
       </form>
 
       <section className="grid gap-6 md:grid-cols-2">
@@ -195,7 +206,7 @@ export default async function WebsitePage({ searchParams }: PageProps<"/admin/we
           Adresse, Telefon und E-Mail stehen oben. Freie Gärten zählt das Programm selbst. Leere Kacheln blendet die
           Startseite aus.
         </p>
-        <button className={btnPrimary}>Texte speichern</button>
+        <SaveButton>Texte speichern</SaveButton>
       </form>
 
       <section id="kacheln" className="grid gap-4 sm:grid-cols-3">
@@ -271,7 +282,7 @@ export default async function WebsitePage({ searchParams }: PageProps<"/admin/we
                     Auf der Startseite zeigen
                   </label>
                   <div className="flex gap-2">
-                    <button className={btn}>Speichern</button>
+                    <SaveButton className={btn}>Speichern</SaveButton>
                   </div>
                 </form>
                 <form action={deleteGalleryImage.bind(null, image.id)} className="sm:col-start-2">
@@ -285,8 +296,13 @@ export default async function WebsitePage({ searchParams }: PageProps<"/admin/we
 
       <section id="vorstand" className={`${card} space-y-4`}>
         <h2 className="text-lg font-semibold">Vorstand</h2>
+        {params.ok === "vorstand" ? (
+          <p role="status" className="rounded-md bg-green-100 px-4 py-3 text-green-800">
+            Gespeichert.
+          </p>
+        ) : null}
         <p className="text-sm text-stone-500">
-          Erscheint auf der Startseite und unter „Vorstand“. Der Zusatztext steht weiter oben bei den Startseitentexten.
+          Erscheint auf der Startseite und unter „Vorstand“. Wer zuerst stehen soll, später mit „Nach oben“ und „Nach unten“ verschieben.
         </p>
         <form action={addBoardMember} className="grid gap-3 sm:grid-cols-2">
           <div>
@@ -305,22 +321,26 @@ export default async function WebsitePage({ searchParams }: PageProps<"/admin/we
             <label className={label} htmlFor="boardPhone">Telefon</label>
             <input id="boardPhone" name="phone" className={input} />
           </div>
-          <div className="sm:col-span-2">
+          <div>
             <label className={label}>Foto (optional)</label>
-            <FileDropField name="photo" label="Foto hierher ziehen oder klicken" />
+            <FileDropField compact name="photo" label="Foto wählen" />
           </div>
-          <button className={btnPrimary}>Person anlegen</button>
+          <div className="flex items-end">
+            <SaveButton>Person anlegen</SaveButton>
+          </div>
         </form>
         {board.length === 0 ? (
           <p className="text-sm text-stone-500">Noch niemand eingetragen.</p>
         ) : (
           <ul className="space-y-6">
-            {board.map((member) => (
+            {board.map((member, index) => {
+              const photo = boardPhotoUrl(member);
+              return (
               <li key={member.id} className="border-t border-stone-100 pt-4">
                 <form action={updateBoardMember.bind(null, member.id)} className="grid gap-3 sm:grid-cols-[6rem_1fr]">
-                  {member.photoFile ? (
+                  {photo ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={`/api/vorstand-foto/${member.id}`} alt="" className="h-24 w-24 rounded-full object-cover" />
+                    <img src={photo} alt="" className="h-24 w-24 rounded-full object-cover" />
                   ) : (
                     <div className="flex h-24 w-24 items-center justify-center rounded-full bg-stone-100 text-sm text-stone-400">
                       Foto
@@ -345,20 +365,38 @@ export default async function WebsitePage({ searchParams }: PageProps<"/admin/we
                     </div>
                     <div>
                       <label className={label}>Reihenfolge</label>
-                      <input name="sortOrder" type="number" defaultValue={member.sortOrder} className={input} />
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="submit"
+                          formAction={moveBoardMember.bind(null, member.id, "up")}
+                          className={`${btn} disabled:cursor-not-allowed disabled:opacity-40`}
+                          disabled={index === 0}
+                        >
+                          Nach oben
+                        </button>
+                        <button
+                          type="submit"
+                          formAction={moveBoardMember.bind(null, member.id, "down")}
+                          className={`${btn} disabled:cursor-not-allowed disabled:opacity-40`}
+                          disabled={index === board.length - 1}
+                        >
+                          Nach unten
+                        </button>
+                      </div>
                     </div>
-                    <div className="sm:col-span-2">
+                    <div>
                       <label className={label}>Foto ersetzen</label>
-                      <FileDropField name="photo" label="Neues Foto hierher ziehen" />
+                      <FileDropField compact name="photo" label="Foto wählen" />
                     </div>
-                    <button className={btnPrimary}>Speichern</button>
+                    <SaveButton>Speichern</SaveButton>
                   </div>
                 </form>
                 <form action={deleteBoardMember.bind(null, member.id)} className="mt-2">
                   <button className="text-sm text-red-700 hover:underline">Person entfernen</button>
                 </form>
               </li>
-            ))}
+              );
+            })}
           </ul>
         )}
       </section>

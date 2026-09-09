@@ -2,8 +2,9 @@ import Link from "next/link";
 import { asc, isNull, eq } from "drizzle-orm";
 import { db, tables } from "@/db";
 import { requireUser } from "@/lib/auth";
-import { gardenAttributeLabel, parseGardenAttributes } from "@/lib/garden-attributes";
+import { gardenAttributeLabel, gardenAttributeOptions, gardenHasAttribute, parseGardenAttributes } from "@/lib/garden-attributes";
 import { badge, btn, btnPrimary, card, gardenStatusColors, gardenStatusLabel, gardenStatusLabels, input, label, tableClass, td, th } from "@/lib/ui";
+import SaveButton from "@/components/SaveButton";
 import { gardenCountsFrom } from "@/lib/site";
 import { createGarden, createGardenAttribute, setGardenCount } from "./actions";
 
@@ -11,6 +12,7 @@ export default async function GaertenPage({ searchParams }: PageProps<"/admin/ga
   await requireUser();
   const params = await searchParams;
   const statusFilter = typeof params.status === "string" ? params.status : "";
+  const attributeFilter = typeof params.merkmal === "string" ? params.merkmal : "";
   const search = typeof params.suche === "string" ? params.suche.toLowerCase() : "";
 
   const gardens = db.select().from(tables.gardens).orderBy(asc(tables.gardens.number)).all();
@@ -29,6 +31,7 @@ export default async function GaertenPage({ searchParams }: PageProps<"/admin/ga
 
   const filtered = gardens
     .filter((g) => !statusFilter || g.status === statusFilter)
+    .filter((g) => !attributeFilter || gardenHasAttribute(g.attributes, attributeFilter))
     .filter((g) => {
       if (!search) return true;
       const tenant = tenantByGarden.get(g.id);
@@ -37,6 +40,7 @@ export default async function GaertenPage({ searchParams }: PageProps<"/admin/ga
         (tenant && `${tenant.firstName} ${tenant.lastName}`.toLowerCase().includes(search))
       );
     });
+  const merkmale = gardenAttributeOptions();
 
   const occupancy = gardenCountsFrom(gardens);
   const highestNumber = gardens.reduce((max, garden) => Math.max(max, garden.number), 0);
@@ -55,6 +59,7 @@ export default async function GaertenPage({ searchParams }: PageProps<"/admin/ga
         </div>
       </div>
       {params.ok === "angelegt" && <p className="rounded-md bg-green-100 px-4 py-3 text-green-800">Garten angelegt.</p>}
+      {params.ok === "erfasst" && <p className="rounded-md bg-green-100 px-4 py-3 text-green-800">Alle Gärten erfasst.</p>}
       {params.ok === "geloescht" && <p className="rounded-md bg-green-100 px-4 py-3 text-green-800">Nummer gelöscht.</p>}
       {params.ok === "anzahl" && (
         <p className="rounded-md bg-green-100 px-4 py-3 text-green-800">
@@ -103,7 +108,7 @@ export default async function GaertenPage({ searchParams }: PageProps<"/admin/ga
               placeholder="z.B. 80"
             />
           </div>
-          <button className={btnPrimary}>{gardens.length === 0 ? "Anlegen" : "Übernehmen"}</button>
+          <SaveButton>{gardens.length === 0 ? "Anlegen" : "Übernehmen"}</SaveButton>
         </form>
       </section>
       <p className="text-sm text-stone-500">
@@ -116,17 +121,17 @@ export default async function GaertenPage({ searchParams }: PageProps<"/admin/ga
             <label className={label} htmlFor="newNumber">Eine Nummer anlegen</label>
             <input id="newNumber" name="number" inputMode="numeric" required className={`${input} w-32`} placeholder="z.B. 107" />
           </div>
-          <button className={btn}>Anlegen</button>
+          <SaveButton className={btn}>Anlegen</SaveButton>
         </form>
         <form action={createGardenAttribute} className="flex flex-wrap items-end gap-3">
           <div>
             <label className={label} htmlFor="newMerkmal">Ein Merkmal anlegen</label>
             <input id="newMerkmal" name="merkmal" required maxLength={50} className={`${input} w-48`} placeholder="z.B. Wildwuchs" />
           </div>
-          <button className={btn}>Anlegen</button>
+          <SaveButton className={btn}>Anlegen</SaveButton>
         </form>
       </div>
-      <form className="flex flex-wrap items-center gap-3">
+      <form method="get" className="flex flex-wrap items-center gap-3">
         <input
           name="suche"
           placeholder="Nummer oder Pächter…"
@@ -137,6 +142,12 @@ export default async function GaertenPage({ searchParams }: PageProps<"/admin/ga
           <option value="">Status</option>
           {Object.entries(gardenStatusLabels).map(([value, text]) => (
             <option key={value} value={value}>{text}</option>
+          ))}
+        </select>
+        <select name="merkmal" defaultValue={attributeFilter} className="rounded-md border border-stone-300 bg-white px-3 py-2 text-sm">
+          <option value="">Merkmal</option>
+          {merkmale.map((item) => (
+            <option key={item.value} value={item.value}>{item.label}</option>
           ))}
         </select>
         <button className={btn}>Filtern</button>

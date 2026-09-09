@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { lookupMapAddress, saveMapPoint } from "@/app/admin/website/actions";
 import LocationPicker from "@/components/LocationPicker";
-import { btn, btnPrimary, input, label } from "@/lib/ui";
+import SaveButton from "@/components/SaveButton";
+import { btn, input, label } from "@/lib/ui";
 
 export default function LocationEditor({
   address,
@@ -34,7 +35,7 @@ export default function LocationEditor({
           className={input}
           placeholder="Straße, PLZ Ort"
         />
-        <button className={btn}>Adresse auf der Karte suchen</button>
+        <SaveButton className={btn}>Adresse auf der Karte suchen</SaveButton>
       </form>
       <p className="text-xs text-stone-500">
         Oder auf die Karte klicken und den Punkt verschieben. Besucher sehen zuerst ein Standbild, die bewegliche Karte
@@ -48,9 +49,7 @@ export default function LocationEditor({
       <form action={saveMapPoint}>
         <input type="hidden" name="mapLat" value={point.lat ?? ""} />
         <input type="hidden" name="mapLng" value={point.lng ?? ""} />
-        <button className={btnPrimary} disabled={!saved}>
-          Diesen Punkt speichern
-        </button>
+        <SaveButton disabled={!saved}>Diesen Punkt speichern</SaveButton>
       </form>
     </div>
   );
