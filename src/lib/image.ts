@@ -33,7 +33,7 @@ function keepAsPng(
   return true;
 }
 
-async function imageHasVisibleAlpha(image: sharp.Sharp, hasAlpha: boolean | undefined): Promise<boolean> {
+async function imageHasVisibleAlpha(image: ReturnType<typeof sharp>, hasAlpha: boolean | undefined): Promise<boolean> {
   if (!hasAlpha) return false;
   const stats = await image.clone().stats();
   const alpha = stats.channels[3];
