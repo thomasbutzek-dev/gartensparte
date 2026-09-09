@@ -49,7 +49,13 @@ export default function GardenScenes({ settings }: { settings: VereinsSettings }
           >
             {scene.image ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={`/api/kachel/${scene.slot}`} alt="" className="absolute inset-0 h-full w-full object-cover" />
+              <img
+                src={`/api/kachel/${scene.slot}`}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                className="absolute inset-0 h-full w-full object-cover"
+              />
             ) : (
               <div className="absolute inset-0 bg-green-50 px-6 pt-8">
                 <div className="h-24 w-full">{scene.art}</div>

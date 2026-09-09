@@ -28,7 +28,14 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
           <Link href="/" className="flex items-center gap-3">
             {settings.logoFile ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src="/api/logo" alt="" className="h-10 w-10 rounded-full bg-white object-contain p-0.5" />
+              <img
+                src="/api/logo"
+                alt=""
+                width={40}
+                height={40}
+                decoding="async"
+                className="h-10 w-10 rounded-full bg-white object-contain p-0.5"
+              />
             ) : null}
             <span className="text-lg font-bold leading-tight">{settings.vereinName}</span>
           </Link>

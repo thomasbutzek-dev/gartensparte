@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import { uploadsDir } from "@/db";
-import { fileResponse, mimeFromName } from "@/lib/files";
+import { fileResponse, mimeFromName, PUBLIC_IMAGE_CACHE } from "@/lib/files";
 import { getGalleryImage } from "@/lib/site";
 
 export async function GET(_request: Request, { params }: RouteContext<"/api/galerie/[id]">) {
@@ -9,6 +9,6 @@ export async function GET(_request: Request, { params }: RouteContext<"/api/gale
   if (!image) return new Response("Nicht gefunden", { status: 404 });
   return fileResponse(join(uploadsDir, "galerie"), image.fileName, {
     mimeType: mimeFromName(image.fileName),
-    cache: "public, max-age=3600",
+    cache: PUBLIC_IMAGE_CACHE,
   });
 }

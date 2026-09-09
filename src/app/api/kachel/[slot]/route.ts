@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import { uploadsDir } from "@/db";
-import { fileResponse, mimeFromName } from "@/lib/files";
+import { fileResponse, mimeFromName, PUBLIC_IMAGE_CACHE } from "@/lib/files";
 import { getSettings } from "@/lib/settings";
 
 const keys = ["scene1Image", "scene2Image", "scene3Image"] as const;
@@ -13,6 +13,6 @@ export async function GET(_request: Request, { params }: RouteContext<"/api/kach
   if (!fileName) return new Response("Kein Bild hinterlegt", { status: 404 });
   return fileResponse(join(uploadsDir, "website"), fileName, {
     mimeType: mimeFromName(fileName),
-    cache: "public, max-age=300",
+    cache: PUBLIC_IMAGE_CACHE,
   });
 }

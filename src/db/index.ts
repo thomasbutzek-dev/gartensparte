@@ -41,5 +41,6 @@ export const db = drizzle(sqlite, { schema });
 // Migrationen beim Start anwenden (idempotent), danach Erstbefüllung
 migrate(db, { migrationsFolder: join(process.cwd(), "src", "db", "migrations") });
 ensureSeeded(db);
+void import("@/lib/compact-images").then((mod) => mod.startImageCompact());
 
 export * as tables from "./schema";

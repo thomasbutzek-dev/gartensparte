@@ -1,8 +1,20 @@
 import sharp from "sharp";
 
+export type ImagePresetName = "photo" | "logo" | "hero" | "card";
+
+export const IMAGE_PRESETS = {
+  /** Gartenfotos und sonstige Uploads. */
+  photo: { maxEdge: 1600, quality: 78, keepPngIfAlpha: true },
+  /** Vereinslogo in Kopf und Titelbild. */
+  logo: { maxEdge: 256, quality: 82, keepPngIfAlpha: true },
+  /** Großes Titelbild auf der Startseite. */
+  hero: { maxEdge: 1600, quality: 68, keepPngIfAlpha: false },
+  /** Kacheln, Galerie, Vorstandsfotos. */
+  card: { maxEdge: 900, quality: 70, keepPngIfAlpha: false },
+} as const;
+
 /** Längste Seite nach dem Verkleinern. Reicht für Website, Gartenfotos und Lageplan. */
-export const MAX_IMAGE_EDGE = 1600;
-const JPEG_QUALITY = 78;
+export const MAX_IMAGE_EDGE = IMAGE_PRESETS.photo.maxEdge;
 
 export type ShrunkImage = {
   bytes: Buffer;
@@ -10,26 +22,48 @@ export type ShrunkImage = {
   mimeType: "image/jpeg" | "image/png";
 };
 
+function keepAsPng(
+  meta: { width?: number; height?: number; hasAlpha?: boolean },
+  preset: (typeof IMAGE_PRESETS)[ImagePresetName],
+  name: ImagePresetName,
+  alphaIsUsed: boolean,
+): boolean {
+  if (!preset.keepPngIfAlpha || !alphaIsUsed || !meta.width || !meta.height) return false;
+  if (name === "photo") return Math.max(meta.width, meta.height) <= 800;
+  return true;
+}
+
+async function imageHasVisibleAlpha(image: sharp.Sharp, hasAlpha: boolean | undefined): Promise<boolean> {
+  if (!hasAlpha) return false;
+  const stats = await image.clone().stats();
+  const alpha = stats.channels[3];
+  return Boolean(alpha && alpha.min < 255);
+}
+
 /**
- * Macht aus einem hochgeladenen Foto eine kleine Fassung.
+ * Macht aus einem Foto eine kleine Fassung für die angegebene Verwendung.
  * Das Original bleibt im Speicher und wird nicht mitgeschrieben.
  * PNG mit Transparenz bleibt PNG, alles andere wird JPG.
  */
-export async function shrinkUploadedImage(bytes: Buffer): Promise<ShrunkImage | null> {
+export async function shrinkUploadedImage(
+  bytes: Buffer,
+  presetName: ImagePresetName = "photo",
+): Promise<ShrunkImage | null> {
   try {
+    const preset = IMAGE_PRESETS[presetName];
     const image = sharp(bytes, { failOn: "none" }).rotate();
     const meta = await image.metadata();
     if (!meta.width || !meta.height) return null;
+    const alphaIsUsed = await imageHasVisibleAlpha(image, meta.hasAlpha);
 
     const resized = image.resize({
-      width: MAX_IMAGE_EDGE,
-      height: MAX_IMAGE_EDGE,
+      width: preset.maxEdge,
+      height: preset.maxEdge,
       fit: "inside",
       withoutEnlargement: true,
     });
 
-    const keepPng = Boolean(meta.hasAlpha) && Math.max(meta.width, meta.height) <= 800;
-    if (keepPng) {
+    if (keepAsPng(meta, preset, presetName, alphaIsUsed)) {
       return {
         bytes: await resized.png({ compressionLevel: 9 }).toBuffer(),
         extension: ".png",
@@ -38,7 +72,7 @@ export async function shrinkUploadedImage(bytes: Buffer): Promise<ShrunkImage | 
     }
 
     return {
-      bytes: await resized.flatten({ background: "#ffffff" }).jpeg({ quality: JPEG_QUALITY, mozjpeg: true }).toBuffer(),
+      bytes: await resized.flatten({ background: "#ffffff" }).jpeg({ quality: preset.quality, mozjpeg: true }).toBuffer(),
       extension: ".jpg",
       mimeType: "image/jpeg",
     };

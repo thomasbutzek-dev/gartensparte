@@ -12,6 +12,8 @@ export default function ImpressionStrip({ images }: { images: Image[] }) {
               <img
                 src={`/api/galerie/${image.id}`}
                 alt={image.caption || ""}
+                loading="lazy"
+                decoding="async"
                 className="aspect-[4/3] w-full object-cover"
               />
               {image.caption ? <figcaption className="px-3 py-2 text-xs text-stone-500">{image.caption}</figcaption> : null}

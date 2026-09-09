@@ -1,12 +1,12 @@
 import { mkdtempSync } from "node:fs";
-import { readdir, readFile } from "node:fs/promises";
+import { readdir, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { PNG } from "pngjs";
 import sharp from "sharp";
 import { describe, expect, it } from "vitest";
-import { MAX_IMAGE_EDGE, shrinkUploadedImage } from "@/lib/image";
-import { imageTypeFromFile, saveImageUpload, saveUpload } from "@/lib/files";
+import { IMAGE_PRESETS, MAX_IMAGE_EDGE, shrinkUploadedImage } from "@/lib/image";
+import { imageTypeFromFile, replaceStoredImage, saveImageUpload, saveUpload } from "@/lib/files";
 
 function noisyPng(width: number, height: number, alpha = false): Buffer {
   const png = new PNG({ width, height, colorType: alpha ? 6 : 2 });
@@ -74,5 +74,85 @@ describe("Bilder verkleinern", () => {
     if ("error" in saved) throw new Error(saved.error);
     expect(saved.fileName.endsWith(".pdf")).toBe(true);
     expect(await readFile(join(dir, saved.fileName))).toEqual(pdf);
+  });
+
+  it("verkleinert das Logo auf Kachelgröße", async () => {
+    const original = noisyPng(1024, 1024);
+    const shrunk = await shrinkUploadedImage(original, "logo");
+    expect(shrunk).not.toBeNull();
+    expect(shrunk!.extension).toBe(".jpg");
+    const meta = await sharp(shrunk!.bytes).metadata();
+    expect(Math.max(meta.width ?? 0, meta.height ?? 0)).toBe(IMAGE_PRESETS.logo.maxEdge);
+  });
+
+  it("macht aus einem großen Titelbild eine kleine JPG-Fassung", async () => {
+    const original = noisyPng(1536, 1024);
+    const shrunk = await shrinkUploadedImage(original, "hero");
+    expect(shrunk).not.toBeNull();
+    expect(shrunk!.extension).toBe(".jpg");
+    const meta = await sharp(shrunk!.bytes).metadata();
+    expect(Math.max(meta.width ?? 0, meta.height ?? 0)).toBeLessThanOrEqual(IMAGE_PRESETS.hero.maxEdge);
+  });
+
+  it("macht unkomprimierte Fotos deutlich kleiner", async () => {
+    const raw = Buffer.alloc(900 * 600 * 3);
+    for (let i = 0; i < raw.length; i++) raw[i] = (i * 29 + 7) & 255;
+    const original = await sharp(raw, { raw: { width: 900, height: 600, channels: 3 } })
+      .png({ compressionLevel: 0 })
+      .toBuffer();
+    const shrunk = await shrinkUploadedImage(original, "card");
+    expect(shrunk).not.toBeNull();
+    expect(shrunk!.extension).toBe(".jpg");
+    expect(shrunk!.bytes.length).toBeLessThan(original.length / 3);
+  });
+
+  it("verkleinert Gartenfotos beim Hochladen und behält das Original nicht", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "gartensparte-gartenfoto-"));
+    const original = noisyPng(2400, 1600);
+    const saved = await saveUpload(dir, new File([original], "laube.png", { type: "image/png" }));
+    expect(saved).toMatchObject({ mimeType: "image/jpeg" });
+    if ("error" in saved) throw new Error(saved.error);
+    const files = await readdir(dir);
+    expect(files).toEqual([saved.fileName]);
+    expect(saved.fileName.endsWith(".jpg")).toBe(true);
+    expect((await readFile(join(dir, saved.fileName))).length).toBeLessThan(original.length);
+  });
+
+  it("verkleinert ein Foto ohne gemeldeten Dateityp, wie beim Ziehen unter Windows", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "gartensparte-win-"));
+    const saved = await saveUpload(dir, new File([noisyPng(80, 80)], "garten.png"));
+    expect(saved).not.toHaveProperty("error");
+    if ("error" in saved) throw new Error(saved.error);
+    expect(saved.fileName.endsWith(".png") || saved.fileName.endsWith(".jpg")).toBe(true);
+  });
+
+  it("ersetzt ein schon gespeichertes Original durch die kleine Fassung", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "gartensparte-replace-"));
+    const raw = Buffer.alloc(900 * 600 * 3);
+    for (let i = 0; i < raw.length; i++) raw[i] = (i * 29 + 7) & 255;
+    const original = await sharp(raw, { raw: { width: 900, height: 600, channels: 3 } })
+      .png({ compressionLevel: 0 })
+      .toBuffer();
+    await writeFile(join(dir, "titel.png"), original);
+    const replaced = await replaceStoredImage(dir, "titel.png", "hero");
+    expect(replaced).toMatchObject({ changed: true, mimeType: "image/jpeg", fileName: "titel.jpg" });
+    const files = await readdir(dir);
+    expect(files).toEqual(["titel.jpg"]);
+    expect((await readFile(join(dir, "titel.jpg"))).length).toBeLessThan(original.length / 3);
+  });
+
+  it("wirft das Original weg, wenn die kleine Fassung schon liegt", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "gartensparte-dup-"));
+    const raw = Buffer.alloc(900 * 600 * 3);
+    for (let i = 0; i < raw.length; i++) raw[i] = (i * 29 + 7) & 255;
+    const original = await sharp(raw, { raw: { width: 900, height: 600, channels: 3 } })
+      .png({ compressionLevel: 0 })
+      .toBuffer();
+    await writeFile(join(dir, "titel.png"), original);
+    await replaceStoredImage(dir, "titel.png", "hero");
+    await writeFile(join(dir, "titel.png"), original);
+    const again = await replaceStoredImage(dir, "titel.png", "hero");
+    expect(again).toMatchObject({ changed: true, fileName: "titel.jpg" });
+    expect(await readdir(dir)).toEqual(["titel.jpg"]);
   });
 });

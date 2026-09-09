@@ -36,7 +36,13 @@ export default function StartPage() {
       <section className="relative overflow-hidden bg-sparte text-white">
         {settings.heroFile ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src="/api/hero" alt="" className="absolute inset-0 h-full w-full object-cover" />
+          <img
+            src="/api/hero"
+            alt=""
+            fetchPriority="high"
+            decoding="async"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
         ) : null}
         <div className={`relative ${settings.heroFile ? photoWash : "bg-gradient-to-br from-lime-600 via-sparte to-sparte-deep"}`}>
           {!settings.heroFile ? <GardenHeroArt /> : null}
@@ -44,7 +50,14 @@ export default function StartPage() {
             <div className={`max-w-2xl ${settings.heroFile ? `-mx-4 px-4 pb-12 pt-20 ${photoScrim}` : ""}`}>
               {settings.logoFile ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src="/api/logo" alt="" className="mb-5 h-16 w-16 rounded-full bg-white object-contain p-1 shadow" />
+                <img
+                  src="/api/logo"
+                  alt=""
+                  width={64}
+                  height={64}
+                  decoding="async"
+                  className="mb-5 h-16 w-16 rounded-full bg-white object-contain p-1 shadow"
+                />
               ) : null}
               <h1 className={`text-4xl font-bold tracking-tight md:text-5xl ${photoText}`}>{settings.vereinName}</h1>
               {settings.slogan ? <p className={`mt-3 text-lg ${photoMuted}`}>{settings.slogan}</p> : null}

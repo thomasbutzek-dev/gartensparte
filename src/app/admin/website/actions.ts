@@ -103,7 +103,7 @@ export async function uploadLogo(formData: FormData) {
   await requireWrite();
   const file = formData.get("file") as File | null;
   if (!file) redirect("/admin/website?fehler=datei");
-  const saved = await saveImageUpload(join(uploadsDir, "website"), file);
+  const saved = await saveImageUpload(join(uploadsDir, "website"), file, "logo");
   if ("error" in saved) redirect("/admin/website?fehler=bild");
   const current = getSettings();
   if (current.logoFile) {
@@ -129,7 +129,7 @@ export async function uploadHero(formData: FormData) {
   await requireWrite();
   const file = formData.get("file") as File | null;
   if (!file) redirect("/admin/website?fehler=datei");
-  const saved = await saveImageUpload(join(uploadsDir, "website"), file);
+  const saved = await saveImageUpload(join(uploadsDir, "website"), file, "hero");
   if ("error" in saved) redirect("/admin/website?fehler=bild");
   const current = getSettings();
   if (current.heroFile) {
@@ -148,7 +148,7 @@ export async function uploadSceneImage(slot: number, formData: FormData) {
   if (!key) redirect("/admin/website");
   const file = formData.get("file") as File | null;
   if (!file) redirect("/admin/website?fehler=datei");
-  const saved = await saveImageUpload(join(uploadsDir, "website"), file);
+  const saved = await saveImageUpload(join(uploadsDir, "website"), file, "card");
   if ("error" in saved) redirect("/admin/website?fehler=bild");
   const current = getSettings();
   if (current[key]) {
@@ -192,7 +192,7 @@ export async function addGalleryImage(formData: FormData) {
   const caption = text(formData, "caption", 200);
   let failed = false;
   for (const [index, file] of files.entries()) {
-    const saved = await saveImageUpload(join(uploadsDir, "galerie"), file);
+    const saved = await saveImageUpload(join(uploadsDir, "galerie"), file, "card");
     if ("error" in saved) {
       failed = true;
       continue;
@@ -246,7 +246,7 @@ export async function addBoardMember(formData: FormData) {
   let photoFile: string | null = null;
   const file = formData.get("photo") as File | null;
   if (file && file.size > 0) {
-    const saved = await saveImageUpload(join(uploadsDir, "vorstand"), file);
+    const saved = await saveImageUpload(join(uploadsDir, "vorstand"), file, "card");
     if ("error" in saved) redirect("/admin/website?fehler=bild#vorstand");
     photoFile = saved.fileName;
   }
@@ -273,7 +273,7 @@ export async function updateBoardMember(memberId: number, formData: FormData) {
   let photoFile = current.photoFile;
   const file = formData.get("photo") as File | null;
   if (file && file.size > 0) {
-    const saved = await saveImageUpload(join(uploadsDir, "vorstand"), file);
+    const saved = await saveImageUpload(join(uploadsDir, "vorstand"), file, "card");
     if ("error" in saved) redirect("/admin/website?fehler=bild#vorstand");
     if (current.photoFile) {
       await unlink(join(uploadsDir, "vorstand", current.photoFile)).catch(() => {});
