@@ -33,7 +33,7 @@ export default async function FreieGaertenPage({ searchParams }: PageProps<"/fre
   return (
     <SiteContainer className="space-y-8 py-10">
       <h1 className="text-2xl font-bold">Freie Gärten</h1>
-      <RichText html={settings.uebernahmeText} className="max-w-2xl text-stone-600" />
+      <RichText html={settings.uebernahmeText} className="text-stone-600" />
 
       {freeGardens.length === 0 ? (
         <p className={card}>
