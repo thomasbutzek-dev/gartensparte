@@ -1,7 +1,7 @@
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
-import { mkdirSync } from "node:fs";
+import { closeSync, mkdirSync, openSync, statSync, unlinkSync, writeSync } from "node:fs";
 import { join } from "node:path";
 import * as schema from "./schema";
 import { ensureSeeded } from "./seed";
@@ -38,11 +38,62 @@ globalForDb.__sqlite = sqlite;
 
 export const db = drizzle(sqlite, { schema });
 
-// Beim `next build` nicht befüllen: mehrere Worker würden sonst gleichzeitig
-// dieselben Tabellen anlegen. Migrationen laufen erst im laufenden Container.
+function tableExists(name: string): boolean {
+  const row = sqlite
+    .prepare("SELECT 1 AS ok FROM sqlite_master WHERE type = 'table' AND name = ?")
+    .get(name) as { ok: number } | undefined;
+  return Boolean(row);
+}
+
+function sleepSync(ms: number) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+/** `next build` startet mehrere Worker; ohne Sperre legen die dieselben Tabellen doppelt an. */
+function migrateOnce() {
+  if (tableExists("settings")) {
+    ensureSeeded(db);
+    return;
+  }
+
+  const lockPath = join(dataDir, ".migrate.lock");
+  const deadline = Date.now() + 30_000;
+  while (Date.now() < deadline) {
+    try {
+      try {
+        if (Date.now() - statSync(lockPath).mtimeMs > 60_000) unlinkSync(lockPath);
+      } catch {
+        // Lock-Datei gibt es nicht oder ist nicht lesbar.
+      }
+      const fd = openSync(lockPath, "wx");
+      try {
+        writeSync(fd, String(process.pid));
+        if (!tableExists("settings")) {
+          migrate(db, { migrationsFolder: join(process.cwd(), "src", "db", "migrations") });
+        }
+        ensureSeeded(db);
+      } finally {
+        closeSync(fd);
+        try {
+          unlinkSync(lockPath);
+        } catch {
+          // schon weg
+        }
+      }
+      return;
+    } catch {
+      if (tableExists("settings")) {
+        ensureSeeded(db);
+        return;
+      }
+      sleepSync(50);
+    }
+  }
+  throw new Error("Datenbank-Start: Lock-Timeout");
+}
+
+migrateOnce();
 if (process.env.NEXT_PHASE !== "phase-production-build") {
-  migrate(db, { migrationsFolder: join(process.cwd(), "src", "db", "migrations") });
-  ensureSeeded(db);
   void import("@/lib/compact-images").then((mod) => mod.startImageCompact());
 }
 
