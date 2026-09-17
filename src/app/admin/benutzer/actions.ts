@@ -8,6 +8,7 @@ import { db, tables } from "@/db";
 import { requireAdminRole, hashPassword } from "@/lib/auth";
 import { nowIso } from "@/lib/format";
 import { roles } from "@/lib/roles";
+import { isStartPassword } from "@/lib/start-password";
 
 const userSchema = z.object({
   name: z.string().trim().min(1).max(100),
@@ -28,6 +29,7 @@ export async function createUser(formData: FormData) {
   });
   const password = String(formData.get("password") ?? "");
   if (!parsed.success || password.length < 8) redirect("/admin/benutzer?fehler=eingabe");
+  if (isStartPassword(password)) redirect("/admin/benutzer?fehler=startpasswort");
   const exists = db.select().from(tables.users).where(eq(tables.users.username, parsed.data.username)).get();
   if (exists) redirect("/admin/benutzer?fehler=benutzername");
   db.insert(tables.users)
@@ -41,7 +43,8 @@ export async function setUserPassword(userId: number, formData: FormData) {
   await requireAdminRole();
   const password = String(formData.get("password") ?? "");
   if (password.length < 8) redirect("/admin/benutzer?fehler=passwort");
-  db.update(tables.users).set({ passwordHash: hashPassword(password) }).where(eq(tables.users.id, userId)).run();
+  if (isStartPassword(password)) redirect("/admin/benutzer?fehler=startpasswort");
+  db.update(tables.users).set({ passwordHash: hashPassword(password), mustChangePassword: false }).where(eq(tables.users.id, userId)).run();
   db.delete(tables.sessions).where(eq(tables.sessions.userId, userId)).run();
   revalidatePath("/admin/benutzer");
   redirect("/admin/benutzer?ok=passwort");
@@ -49,9 +52,10 @@ export async function setUserPassword(userId: number, formData: FormData) {
 
 export async function setUserRole(userId: number, formData: FormData) {
   const admin = await requireAdminRole();
-  const role = z.enum(roles).parse(formData.get("role"));
+  const parsed = z.enum(roles).safeParse(formData.get("role"));
+  if (!parsed.success) redirect("/admin/benutzer?fehler=eingabe");
   if (userId === admin.id) redirect("/admin/benutzer?fehler=selbst");
-  db.update(tables.users).set({ role }).where(eq(tables.users.id, userId)).run();
+  db.update(tables.users).set({ role: parsed.data }).where(eq(tables.users.id, userId)).run();
   revalidatePath("/admin/benutzer");
 }
 

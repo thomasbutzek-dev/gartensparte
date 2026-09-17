@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 
 process.env.DATA_DIR = mkdtempSync(join(tmpdir(), "gartensparte-hours-"));
 
-const { creditedWorkHours, missingWorkHours } = await import("@/lib/work-hours");
+const { creditedWorkHours, missingWorkHours, tenancyOverlapsYear } = await import("@/lib/work-hours");
 
 describe("Arbeitsstunden-Soll", () => {
   it("zählt Sondertätigkeit als erfüllt", () => {
@@ -16,5 +16,12 @@ describe("Arbeitsstunden-Soll", () => {
   it("rechnet ohne Befreiung die Fehlstunden", () => {
     expect(creditedWorkHours(3, false, 8)).toBe(3);
     expect(missingWorkHours(3, false, 8)).toBe(5);
+  });
+
+  it("erkennt Pacht nur im überlappenden Kalenderjahr", () => {
+    expect(tenancyOverlapsYear("2026-09-04", null, 2025)).toBe(false);
+    expect(tenancyOverlapsYear("2026-09-04", null, 2026)).toBe(true);
+    expect(tenancyOverlapsYear("2024-01-01", "2025-06-01", 2025)).toBe(true);
+    expect(tenancyOverlapsYear("2024-01-01", "2025-06-01", 2026)).toBe(false);
   });
 });

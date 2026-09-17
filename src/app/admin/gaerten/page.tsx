@@ -161,7 +161,8 @@ export default async function GaertenPage({ searchParams }: PageProps<"/admin/ga
               <th className={th}>Status</th>
               <th className={th}>Merkmale</th>
               <th className={th}>Pächter</th>
-              <th className={th}>Zähler-Nr.</th>
+              <th className={th}>Strom-Nr.</th>
+              <th className={th}>Wasser-Nr.</th>
             </tr>
           </thead>
           <tbody>
@@ -200,6 +201,7 @@ export default async function GaertenPage({ searchParams }: PageProps<"/admin/ga
                     )}
                   </td>
                   <td className={td}>{g.meterNumber || "–"}</td>
+                  <td className={td}>{g.waterMeterNumber || "–"}</td>
                 </tr>
               );
             })}

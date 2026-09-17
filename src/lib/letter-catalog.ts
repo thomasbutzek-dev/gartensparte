@@ -20,14 +20,32 @@ export const letterGroupLabels: Record<LetterGroup, string> = {
   sonstiges: "Sonstiges",
 };
 
-export const archiveTypeLabels: Record<string, string> = {
+/** Rechnungen und Zahlungserinnerungen – nur Kasse. */
+export const moneyArchiveTypeLabels: Record<string, string> = {
   rechnung: "Rechnung",
   mahnung: "Mahnung",
+};
+
+/** Abmahnung, Kündigung, Rundschreiben und Sonstiges – für den Vorstand. */
+export const boardArchiveTypeLabels: Record<string, string> = {
   abmahnung: "Abmahnung",
   kuendigung: "Kündigung",
   rundschreiben: "Rundschreiben",
   sonstiges: "Sonstiges",
 };
+
+export const archiveTypeLabels: Record<string, string> = {
+  ...moneyArchiveTypeLabels,
+  ...boardArchiveTypeLabels,
+};
+
+export function isMoneyLetterType(type: string): boolean {
+  return type === "rechnung" || type === "mahnung";
+}
+
+export function isMoneyLetterGroup(group: string): boolean {
+  return group === "zahlung";
+}
 
 export function archiveTypeFor(template: { type: string; letterGroup: string }): string {
   if (template.type === "rechnung") return "rechnung";

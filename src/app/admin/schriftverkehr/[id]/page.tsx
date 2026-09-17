@@ -2,7 +2,8 @@ import Link from "next/link";
 import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { db, tables } from "@/db";
-import { requireUser } from "@/lib/auth";
+import { requireLetterRead } from "@/lib/auth";
+import { isMoneyLetterType } from "@/lib/letter-catalog";
 import { btn, btnPrimary, card, input, label } from "@/lib/ui";
 import { deleteLetter, finalizeLetter, saveDraft } from "../actions";
 
@@ -10,11 +11,11 @@ export default async function BriefEntwurfPage({
   params,
   searchParams,
 }: PageProps<"/admin/schriftverkehr/[id]">) {
-  await requireUser();
   const { id } = await params;
   const query = await searchParams;
   const letter = db.select().from(tables.letters).where(eq(tables.letters.id, Number(id))).get();
   if (!letter) notFound();
+  await requireLetterRead(letter.type);
 
   const member = letter.memberId
     ? db.select().from(tables.members).where(eq(tables.members.id, letter.memberId)).get()
@@ -32,7 +33,9 @@ export default async function BriefEntwurfPage({
     <div className="mx-auto max-w-3xl space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">{isDraft ? "Entwurf" : "Schreiben"}</h1>
-        <Link href="/admin/schriftverkehr" className={btn}>← Briefe</Link>
+        <Link href={isMoneyLetterType(letter.type) ? "/admin/zahlungen" : "/admin/schriftverkehr"} className={btn}>
+          {isMoneyLetterType(letter.type) ? "← Zahlungen" : "← Briefe"}
+        </Link>
       </div>
 
       {query.ok === "entwurf" && <p className="rounded-md bg-green-100 px-4 py-3 text-green-800">Entwurf gespeichert.</p>}

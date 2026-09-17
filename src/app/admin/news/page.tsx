@@ -24,6 +24,9 @@ export default async function AdminNewsPage({ searchParams }: PageProps<"/admin/
       {params.fehler === "text" && (
         <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">Bitte einen Text zur Meldung schreiben.</p>
       )}
+      {params.fehler === "eingabe" && (
+        <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">Bitte Titel und Sichtbarkeit prüfen.</p>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_24rem]">
         <div className={card}>

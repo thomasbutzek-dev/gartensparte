@@ -1,4 +1,5 @@
 import { eq } from "drizzle-orm";
+import { cache } from "react";
 import { db, tables } from "@/db";
 import { looksLikeHtml, sanitizeRichText } from "@/lib/rich-text";
 
@@ -19,6 +20,8 @@ export type VereinsSettings = {
   umlageBezeichnung: string;
   stromCentProKwh: number;
   stromGrundgebuehrCents: number;
+  wasserCentProM3: number;
+  wasserGrundgebuehrCents: number;
   arbeitsstundenSoll: number;
   arbeitsstundenSatzCents: number;
   zahlungszielTage: number;
@@ -70,6 +73,8 @@ export const defaultSettings: VereinsSettings = {
   umlageBezeichnung: "Umlage",
   stromCentProKwh: 40,
   stromGrundgebuehrCents: 1000,
+  wasserCentProM3: 0,
+  wasserGrundgebuehrCents: 0,
   arbeitsstundenSoll: 8,
   arbeitsstundenSatzCents: 1500,
   zahlungszielTage: 30,
@@ -110,7 +115,7 @@ const SETTINGS_KEY = "verein";
 const oldBoardDefault =
   "Vorstand\nSprechzeiten: nach Vereinbarung\n\nBitte nutzen Sie das Kontaktformular oder sprechen Sie uns auf dem Gelände an.";
 
-export function getSettings(): VereinsSettings {
+export const getSettings = cache(function getSettings(): VereinsSettings {
   const row = db.select().from(tables.settings).where(eq(tables.settings.key, SETTINGS_KEY)).get();
   if (!row) return { ...defaultSettings };
   try {
@@ -123,7 +128,7 @@ export function getSettings(): VereinsSettings {
   } catch {
     return { ...defaultSettings };
   }
-}
+});
 
 export function saveSettings(value: VereinsSettings) {
   db.insert(tables.settings)

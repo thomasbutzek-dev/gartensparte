@@ -1,4 +1,5 @@
 import { asc, desc, eq } from "drizzle-orm";
+import { cache } from "react";
 import { db, tables } from "@/db";
 
 export { addressLines, mapsSearchUrl } from "@/lib/settings";
@@ -16,9 +17,9 @@ export function gardenCountsFrom(gardens: { status: string }[]): GardenCounts {
   return { total: existing.length, free, assigned };
 }
 
-export function gardenCounts(): GardenCounts {
+export const gardenCounts = cache(function gardenCounts(): GardenCounts {
   return gardenCountsFrom(db.select({ status: tables.gardens.status }).from(tables.gardens).all());
-}
+});
 
 export function countFreeGardens(): number {
   return gardenCounts().free;
@@ -74,8 +75,10 @@ export function moveInList<T extends { id: number }>(items: T[], id: number, dir
   return next;
 }
 
+import { versionedAssetUrl } from "@/lib/media";
+
 /** Dateiname in der Adresse, damit nach einem neuen Foto nicht das alte aus dem Cache kommt. */
 export function boardPhotoUrl(member: { id: number; photoFile?: string | null }): string | null {
   if (!member.photoFile) return null;
-  return `/api/vorstand-foto/${member.id}?v=${encodeURIComponent(member.photoFile)}`;
+  return versionedAssetUrl(`/api/vorstand-foto/${member.id}`, member.photoFile);
 }

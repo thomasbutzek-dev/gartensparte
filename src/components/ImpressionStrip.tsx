@@ -1,4 +1,6 @@
-type Image = { id: number; caption: string };
+import { versionedAssetUrl } from "@/lib/media";
+
+type Image = { id: number; caption: string; fileName: string };
 
 export default function ImpressionStrip({ images }: { images: Image[] }) {
   if (images.length > 0) {
@@ -10,7 +12,7 @@ export default function ImpressionStrip({ images }: { images: Image[] }) {
             <figure key={image.id} className="overflow-hidden rounded-lg bg-stone-100">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={`/api/galerie/${image.id}`}
+                src={versionedAssetUrl(`/api/galerie/${image.id}`, image.fileName)}
                 alt={image.caption || ""}
                 loading="lazy"
                 decoding="async"

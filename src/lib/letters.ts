@@ -6,6 +6,7 @@ import { db, lettersDir, tables } from "@/db";
 import { getSettings } from "@/lib/settings";
 import { renderLetterPdf, mergePdfs, type InvoiceRow } from "@/lib/pdf";
 import { nowIso } from "@/lib/format";
+import { mapPool } from "@/lib/pool";
 
 export type LetterType = string;
 
@@ -42,6 +43,8 @@ export async function createLetter(options: {
   createdBy: number;
   status?: "entwurf" | "fertig";
   pdfBytes?: Uint8Array;
+  /** Datensatz anlegen, PDF später schreiben (Jahreslauf). */
+  skipPdf?: boolean;
 }): Promise<number> {
   const status = options.status ?? "fertig";
   const inserted = db
@@ -53,7 +56,7 @@ export async function createLetter(options: {
       gardenId: options.gardenId ?? null,
       subject: options.subject,
       body: options.body,
-      fileName: status === "entwurf" ? "" : "pending.pdf",
+      fileName: status === "entwurf" || options.skipPdf ? "" : "pending.pdf",
       status,
       createdAt: nowIso(),
       createdBy: options.createdBy,
@@ -61,7 +64,7 @@ export async function createLetter(options: {
     .returning({ id: tables.letters.id })
     .get();
 
-  if (status === "entwurf") return inserted.id;
+  if (status === "entwurf" || options.skipPdf) return inserted.id;
 
   const settings = getSettings();
   const bytes =
@@ -81,6 +84,38 @@ export async function createLetter(options: {
   return inserted.id;
 }
 
+export type InvoicePdfJob = {
+  letterId: number;
+  recipient: string[];
+  subject: string;
+  body: string;
+  table?: { rows: InvoiceRow[]; totalLabel: string };
+};
+
+export async function renderInvoiceJobs(jobs: InvoicePdfJob[]): Promise<void> {
+  if (jobs.length === 0) return;
+  const settings = getSettings();
+  const date = germanDate();
+  const rendered = await mapPool(jobs, 3, async (job) => ({
+    job,
+    bytes: await renderLetterPdf({
+      settings,
+      recipient: job.recipient,
+      date,
+      subject: job.subject,
+      body: job.body,
+      table: job.table,
+    }),
+  }));
+  for (const { job, bytes } of rendered) {
+    const letter = db.select().from(tables.letters).where(eq(tables.letters.id, job.letterId)).get();
+    if (!letter) continue;
+    const fileName = `${letter.id}-${letter.type}${letter.number ? `-${letter.number}` : ""}.pdf`;
+    await writeFile(join(lettersDir, fileName), bytes);
+    db.update(tables.letters).set({ fileName }).where(eq(tables.letters.id, letter.id)).run();
+  }
+}
+
 export async function writeFinalPdf(letterId: number): Promise<{ ok: true } | { error: string }> {
   const letter = db.select().from(tables.letters).where(eq(tables.letters.id, letterId)).get();
   if (!letter) return { error: "fehlt" };
@@ -96,20 +131,16 @@ export async function writeFinalPdf(letterId: number): Promise<{ ok: true } | { 
       .orderBy(asc(tables.members.lastName), asc(tables.members.firstName))
       .all();
     if (members.length === 0) return { error: "mitglieder" };
-    const pdfs: Uint8Array[] = [];
-    for (const member of members) {
-      const body = letter.body.replaceAll("{{name}}", `${member.firstName} ${member.lastName}`);
-      const subject = letter.subject.replaceAll("{{name}}", `${member.firstName} ${member.lastName}`);
-      pdfs.push(
-        await renderLetterPdf({
-          settings,
-          recipient: memberAddress(member),
-          date: germanDate(),
-          subject,
-          body,
-        }),
-      );
-    }
+    const date = germanDate();
+    const pdfs = await mapPool(members, 3, async (member) =>
+      renderLetterPdf({
+        settings,
+        recipient: memberAddress(member),
+        date,
+        subject: letter.subject.replaceAll("{{name}}", `${member.firstName} ${member.lastName}`),
+        body: letter.body.replaceAll("{{name}}", `${member.firstName} ${member.lastName}`),
+      }),
+    );
     const merged = await mergePdfs(pdfs);
     const fileName = `${letter.id}-rundschreiben.pdf`;
     await writeFile(join(lettersDir, fileName), merged);

@@ -1,7 +1,8 @@
+export const dynamic = "force-dynamic";
+
 import type { Metadata } from "next";
-import { asc } from "drizzle-orm";
-import { db, tables } from "@/db";
-import { getSettings, isPublicLageplanVisible } from "@/lib/settings";
+import { isPublicLageplanVisible } from "@/lib/settings";
+import { getPublicGardens, getPublicSettings } from "@/lib/public-cache";
 import { euro } from "@/lib/format";
 import { getMapBackgroundFile, parsePolygon } from "@/lib/map";
 import { btnPrimary, card, input, label, tableClass, td, th } from "@/lib/ui";
@@ -9,14 +10,15 @@ import GardenMap from "@/components/GardenMap";
 import RichText from "@/components/RichText";
 import SiteContainer from "@/components/SiteContainer";
 import SpamGuard from "@/components/SpamGuard";
+import TurnstileField from "@/components/TurnstileField";
 import { submitApplication } from "../actions";
 
 export const metadata: Metadata = { title: "Freie Gärten" };
 
 export default async function FreieGaertenPage({ searchParams }: PageProps<"/freie-gaerten">) {
   const params = await searchParams;
-  const settings = getSettings();
-  const gardens = db.select().from(tables.gardens).orderBy(asc(tables.gardens.number)).all();
+  const settings = await getPublicSettings();
+  const gardens = await getPublicGardens();
   const existingGardens = gardens.filter((g) => g.status !== "entfaellt");
   const freeGardens = existingGardens.filter((g) => g.status === "frei");
   const mapBackground = getMapBackgroundFile();
@@ -84,7 +86,17 @@ export default async function FreieGaertenPage({ searchParams }: PageProps<"/fre
             Vielen Dank für Ihre Anfrage! Wir melden uns in der Reihenfolge der Eingänge.
           </p>
         )}
-        {params.fehler && (
+        {params.fehler === "warte" && (
+          <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">
+            Zu viele Anfragen in kurzer Zeit. Bitte warten Sie ein paar Minuten.
+          </p>
+        )}
+        {params.fehler === "captcha" && (
+          <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">
+            Die Spam-Prüfung ist fehlgeschlagen. Bitte die Seite neu laden und noch einmal senden.
+          </p>
+        )}
+        {params.fehler && params.fehler !== "warte" && params.fehler !== "captcha" && (
           <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">
             Bitte geben Sie Ihren Namen und mindestens eine Kontaktmöglichkeit (E-Mail oder Telefon) an.
           </p>
@@ -113,6 +125,7 @@ export default async function FreieGaertenPage({ searchParams }: PageProps<"/fre
             <label className={label} htmlFor="message">Nachricht (optional)</label>
             <textarea id="message" name="message" rows={4} className={input} />
           </div>
+          <TurnstileField action="bewerbung" />
           <button className={btnPrimary}>Anfrage senden</button>
         </form>
       </section>

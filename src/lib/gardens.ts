@@ -19,6 +19,7 @@ export function parseGardenCount(value: unknown): number | null {
 function gardenHasContent(garden: {
   sizeSqm: number | null;
   meterNumber: string;
+  waterMeterNumber?: string;
   note: string;
   polygon: string | null;
   attributes?: string;
@@ -26,6 +27,7 @@ function gardenHasContent(garden: {
   return Boolean(
     garden.sizeSqm ||
       garden.meterNumber ||
+      garden.waterMeterNumber ||
       garden.note ||
       garden.polygon ||
       (garden.attributes && garden.attributes !== "[]"),

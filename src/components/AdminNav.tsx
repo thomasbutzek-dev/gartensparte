@@ -10,6 +10,7 @@ export type AdminNavGroup = { title: string; items: AdminNavItem[] };
 
 function isActive(href: string, pathname: string) {
   if (href === "/admin") return pathname === "/admin";
+  if (href === "/admin/ablesen") return pathname === "/admin/ablesen";
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 

@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import DemoProvider from "@/components/DemoProvider";
 import AdminNav, { type AdminNavGroup } from "@/components/AdminNav";
 import { canAdminister, canSeeMoney, canSeeSettings, isDemo, requireUser } from "@/lib/auth";
@@ -30,17 +32,16 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         { href: "/admin/karte", label: "Lageplan" },
         { href: "/admin/mitglieder", label: "Mitglieder" },
         { href: "/admin/ablesen", label: "Strom ablesen" },
+        { href: "/admin/ablesen/wasser", label: "Wasser ablesen" },
         { href: "/admin/arbeitsstunden", label: "Arbeitsstunden" },
+        { href: "/admin/schriftverkehr", label: "Briefe" },
       ],
     },
     ...(canSeeMoney(user)
       ? [
           {
             title: "Kasse",
-            items: [
-              { href: "/admin/zahlungen", label: "Zahlungen" },
-              { href: "/admin/schriftverkehr", label: "Briefe" },
-            ],
+            items: [{ href: "/admin/zahlungen", label: "Zahlungen" }],
           },
         ]
       : []),

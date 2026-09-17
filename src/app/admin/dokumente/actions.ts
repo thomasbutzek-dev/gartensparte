@@ -1,7 +1,6 @@
 "use server";
 
 import { join } from "node:path";
-import { unlink } from "node:fs/promises";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
@@ -10,10 +9,13 @@ import { requireWrite } from "@/lib/auth";
 import { categoryFromForm, rememberPublicCategory } from "@/lib/categories";
 import { saveUpload } from "@/lib/files";
 import { nowIso } from "@/lib/format";
+import { revalidatePublicSite } from "@/lib/public-cache";
+import { deleteStoredFile } from "@/lib/form";
 
 function revalidate() {
   revalidatePath("/admin/dokumente");
   revalidatePath("/dokumente");
+  revalidatePublicSite();
 }
 
 export async function uploadDocument(formData: FormData) {
@@ -54,7 +56,7 @@ export async function deleteDocument(documentId: number) {
   const doc = db.select().from(tables.documents).where(eq(tables.documents.id, documentId)).get();
   if (doc) {
     db.delete(tables.documents).where(eq(tables.documents.id, documentId)).run();
-    await unlink(join(uploadsDir, "dokumente", doc.fileName)).catch(() => {});
+    await deleteStoredFile(join(uploadsDir, "dokumente", doc.fileName));
   }
   revalidate();
 }

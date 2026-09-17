@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { desc, eq } from "drizzle-orm";
 import { db, tables } from "@/db";
-import { requireUser, canSeeMoney, canAdminister } from "@/lib/auth";
+import { canAdminister, canSeeMoney, requireUser } from "@/lib/auth";
+import { isMoneyLetterType } from "@/lib/letter-catalog";
 import { euro, formatDate } from "@/lib/format";
 import { getWorkExemption } from "@/lib/work-hours";
 import SaveButton from "@/components/SaveButton";
@@ -54,7 +55,8 @@ export default async function MitgliedPage({ params, searchParams }: PageProps<"
     .from(tables.letters)
     .where(eq(tables.letters.memberId, member.id))
     .orderBy(desc(tables.letters.createdAt))
-    .all();
+    .all()
+    .filter((letter) => canSeeMoney(user) || !isMoneyLetterType(letter.type));
 
   const updateAction = updateMember.bind(null, member.id);
   const statusAction = setMemberStatus.bind(null, member.id);
@@ -77,6 +79,9 @@ export default async function MitgliedPage({ params, searchParams }: PageProps<"
         <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">
           Löschen nicht möglich: Es gibt Pachtverhältnisse oder Zahlungen zu diesem Mitglied. Stattdessen als „ausgeschieden“ markieren.
         </p>
+      )}
+      {query.fehler === "eingabe" && (
+        <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">Bitte Vor- und Nachname angeben.</p>
       )}
 
       <div className="grid gap-6 lg:grid-cols-2">

@@ -3,15 +3,15 @@ export const dynamic = "force-dynamic";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { formatDate } from "@/lib/format";
-import { listPublishedNews } from "@/lib/site";
+import { getPublicNews } from "@/lib/public-cache";
 import { badge, card } from "@/lib/ui";
 import RichText from "@/components/RichText";
 import SiteContainer from "@/components/SiteContainer";
 
 export const metadata: Metadata = { title: "News" };
 
-export default function NewsPage() {
-  const items = listPublishedNews();
+export default async function NewsPage() {
+  const items = await getPublicNews();
 
   return (
     <SiteContainer className="space-y-6 py-10">

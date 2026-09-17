@@ -21,7 +21,7 @@ const memberSchema = z.object({
 });
 
 function parseMember(formData: FormData) {
-  return memberSchema.parse({
+  const parsed = memberSchema.safeParse({
     firstName: formData.get("firstName"),
     lastName: formData.get("lastName"),
     street: formData.get("street"),
@@ -32,11 +32,13 @@ function parseMember(formData: FormData) {
     memberSince: parseDateInput(String(formData.get("memberSince") ?? "")) ?? "",
     note: formData.get("note"),
   });
+  return parsed.success ? parsed.data : null;
 }
 
 export async function createMember(formData: FormData) {
   await requireWrite();
   const data = parseMember(formData);
+  if (!data) redirect("/admin/mitglieder/neu?fehler=eingabe");
   const inserted = db
     .insert(tables.members)
     .values({ ...data, memberSince: data.memberSince || null })
@@ -49,6 +51,7 @@ export async function createMember(formData: FormData) {
 export async function updateMember(memberId: number, formData: FormData) {
   await requireWrite();
   const data = parseMember(formData);
+  if (!data) redirect(`/admin/mitglieder/${memberId}?fehler=eingabe`);
   db.update(tables.members)
     .set({ ...data, memberSince: data.memberSince || null })
     .where(eq(tables.members.id, memberId))

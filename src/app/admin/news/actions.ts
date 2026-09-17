@@ -8,6 +8,7 @@ import { db, tables } from "@/db";
 import { requireWrite } from "@/lib/auth";
 import { nowIso } from "@/lib/format";
 import { isRichTextEmpty, readRichText } from "@/lib/rich-text";
+import { revalidatePublicSite } from "@/lib/public-cache";
 
 const newsSchema = z.object({
   title: z.string().trim().min(1).max(200),
@@ -17,23 +18,26 @@ const newsSchema = z.object({
 });
 
 function parseNews(formData: FormData) {
-  return newsSchema.parse({
+  const parsed = newsSchema.safeParse({
     title: formData.get("title"),
     body: readRichText(formData, "body"),
     status: formData.get("status") ?? "entwurf",
     pinned: formData.get("pinned") === "1",
   });
+  return parsed.success ? parsed.data : null;
 }
 
 function revalidate() {
   revalidatePath("/admin/news");
   revalidatePath("/news");
   revalidatePath("/");
+  revalidatePublicSite();
 }
 
 export async function createNews(formData: FormData) {
   await requireWrite();
   const data = parseNews(formData);
+  if (!data) redirect("/admin/news?fehler=eingabe");
   if (isRichTextEmpty(data.body)) redirect("/admin/news?fehler=text");
   db.insert(tables.news)
     .values({ ...data, createdAt: nowIso(), publishedAt: data.status === "veroeffentlicht" ? nowIso() : null })
@@ -45,6 +49,7 @@ export async function createNews(formData: FormData) {
 export async function updateNews(newsId: number, formData: FormData) {
   await requireWrite();
   const data = parseNews(formData);
+  if (!data) redirect(`/admin/news/${newsId}?fehler=eingabe`);
   if (isRichTextEmpty(data.body)) redirect(`/admin/news/${newsId}?fehler=text`);
   const existing = db.select().from(tables.news).where(eq(tables.news.id, newsId)).get();
   db.update(tables.news)

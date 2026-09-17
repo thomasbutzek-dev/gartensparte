@@ -38,6 +38,9 @@ export default async function WartelistePage({ searchParams }: PageProps<"/admin
           {showAll ? "Nur aktive anzeigen" : "Auch erledigte anzeigen"}
         </a>
       </p>
+      {params.fehler === "eingabe" && (
+        <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">Bitte einen gültigen Status wählen.</p>
+      )}
       <div className={card}>
         <table className={tableClass}>
           <thead>

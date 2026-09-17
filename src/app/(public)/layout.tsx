@@ -1,6 +1,10 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
-import { getSettings, officeHoursLabel } from "@/lib/settings";
-import { addressLines, gardenCounts, mapsSearchUrl, showFreeGardenCount } from "@/lib/site";
+import { addressLines, mapsSearchUrl, showFreeGardenCount } from "@/lib/site";
+import { officeHoursLabel } from "@/lib/settings";
+import { getPublicGardenCounts, getPublicSettings } from "@/lib/public-cache";
+import { versionedAssetUrl } from "@/lib/media";
 import { publicHeader, publicNavHover } from "@/lib/ui";
 import SiteContainer from "@/components/SiteContainer";
 
@@ -14,11 +18,11 @@ const navItems = [
   { href: "/kontakt", label: "Kontakt" },
 ] as const;
 
-export default function PublicLayout({ children }: { children: React.ReactNode }) {
-  const settings = getSettings();
+export default async function PublicLayout({ children }: { children: React.ReactNode }) {
+  const settings = await getPublicSettings();
   const address = addressLines(settings);
   const mapsUrl = mapsSearchUrl(settings);
-  const occupancy = gardenCounts();
+  const occupancy = await getPublicGardenCounts();
   const showFreeBadge = showFreeGardenCount(occupancy);
 
   return (
@@ -29,7 +33,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
             {settings.logoFile ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src="/api/logo"
+                src={versionedAssetUrl("/api/logo", settings.logoFile)}
                 alt=""
                 width={40}
                 height={40}

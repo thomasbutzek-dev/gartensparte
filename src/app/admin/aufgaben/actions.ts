@@ -17,12 +17,14 @@ const taskSchema = z.object({
 
 export async function createTask(formData: FormData) {
   await requireWrite();
-  const data = taskSchema.parse({
+  const parsed = taskSchema.safeParse({
     title: formData.get("title"),
     description: formData.get("description"),
     assignee: formData.get("assignee"),
     dueDate: parseDateInput(String(formData.get("dueDate") ?? "")) ?? "",
   });
+  if (!parsed.success) redirect("/admin/aufgaben?fehler=eingabe");
+  const data = parsed.data;
   db.insert(tables.tasks)
     .values({ ...data, dueDate: data.dueDate || null, createdAt: nowIso() })
     .run();
@@ -32,8 +34,9 @@ export async function createTask(formData: FormData) {
 
 export async function setTaskStatus(taskId: number, formData: FormData) {
   await requireWrite();
-  const status = z.enum(["offen", "in_arbeit", "erledigt"]).parse(formData.get("status"));
-  db.update(tables.tasks).set({ status }).where(eq(tables.tasks.id, taskId)).run();
+  const parsed = z.enum(["offen", "in_arbeit", "erledigt"]).safeParse(formData.get("status"));
+  if (!parsed.success) redirect("/admin/aufgaben?fehler=eingabe");
+  db.update(tables.tasks).set({ status: parsed.data }).where(eq(tables.tasks.id, taskId)).run();
   revalidatePath("/admin/aufgaben");
   redirect("/admin/aufgaben?ok=1");
 }

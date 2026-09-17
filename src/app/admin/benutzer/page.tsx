@@ -28,6 +28,7 @@ export default async function BenutzerPage({ searchParams }: PageProps<"/admin/b
       {params.fehler === "passwort" && <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">Passwort muss mindestens 8 Zeichen haben.</p>}
       {params.fehler === "selbst" && <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">Das eigene Konto kann nicht geändert werden.</p>}
       {params.fehler === "letzteradmin" && <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">Der letzte aktive Admin kann nicht gesperrt werden.</p>}
+      {params.fehler === "startpasswort" && <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">Das bekannte Startpasswort darf nicht vergeben werden.</p>}
 
       <form action={createUser} className={`${card} grid gap-3 sm:grid-cols-2 lg:grid-cols-5`}>
         <div>

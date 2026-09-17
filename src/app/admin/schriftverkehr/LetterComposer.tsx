@@ -41,9 +41,15 @@ function defaultDeadline(type: string): string {
 export default function LetterComposer({
   templates,
   tenancies,
+  title = "Schreiben vorbereiten",
+  intro = "Vorlage wählen, Empfänger und Angaben eintragen. Als Nächstes erscheint der Entwurf – den Text können Sie noch ändern, erst danach entsteht das PDF.",
+  legalNote = "Die mitgelieferten Texte folgen §§ 7, 8 und 9 BKleingG. Sie ersetzen keine Rechtsberatung. Kündigung nur schriftlich mit Unterschrift, Zugang nachweisen (Einwurf-Einschreiben oder Übergabe mit Zeugen).",
 }: {
   templates: ComposerTemplate[];
   tenancies: ComposerTenancy[];
+  title?: string;
+  intro?: string;
+  legalNote?: string | null;
 }) {
   const [templateId, setTemplateId] = useState(templates[0]?.id ?? 0);
   const selected = templates.find((item) => item.id === templateId) ?? templates[0];
@@ -60,11 +66,8 @@ export default function LetterComposer({
 
   return (
     <section className={`${card} space-y-3`}>
-      <h2 className="text-lg font-semibold">Schreiben vorbereiten</h2>
-      <p className="text-sm text-stone-500">
-        Vorlage wählen, Empfänger und Angaben eintragen. Als Nächstes erscheint der Entwurf – den Text können Sie noch
-        ändern, erst danach entsteht das PDF.
-      </p>
+      <h2 className="text-lg font-semibold">{title}</h2>
+      <p className="text-sm text-stone-500">{intro}</p>
       <form action={startLetter} className="space-y-3">
         <div>
           <label className={label} htmlFor="templateId">Vorlage</label>
@@ -139,10 +142,7 @@ export default function LetterComposer({
         )}
 
         <button className={btnPrimary}>Entwurf öffnen</button>
-        <p className="text-xs text-stone-500">
-          Die mitgelieferten Texte folgen §§ 7, 8 und 9 BKleingG. Sie ersetzen keine Rechtsberatung. Kündigung nur
-          schriftlich mit Unterschrift, Zugang nachweisen (Einwurf-Einschreiben oder Übergabe mit Zeugen).
-        </p>
+        {legalNote ? <p className="text-xs text-stone-500">{legalNote}</p> : null}
       </form>
     </section>
   );

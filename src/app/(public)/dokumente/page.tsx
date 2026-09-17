@@ -1,8 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import type { Metadata } from "next";
-import { desc, eq } from "drizzle-orm";
-import { db, tables } from "@/db";
+import { getPublicDocuments } from "@/lib/public-cache";
 import { publicCategoryGroup } from "@/lib/categories";
 import { formatDate } from "@/lib/format";
 import { card } from "@/lib/ui";
@@ -11,13 +10,8 @@ import SiteContainer from "@/components/SiteContainer";
 
 export const metadata: Metadata = { title: "Dokumente" };
 
-export default function DokumentePage() {
-  const docs = db
-    .select()
-    .from(tables.documents)
-    .where(eq(tables.documents.isPublic, true))
-    .orderBy(desc(tables.documents.uploadedAt))
-    .all();
+export default async function DokumentePage() {
+  const docs = await getPublicDocuments();
 
   const groups = new Map<string, typeof docs>();
   for (const doc of docs) {

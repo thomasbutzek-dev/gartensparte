@@ -37,6 +37,8 @@ COPY --from=deps /app/node_modules/@img ./node_modules/@img
 COPY --from=build /app/src/db/migrations ./src/db/migrations
 
 # Datenverzeichnis (SQLite, Uploads, PDFs) – als Volume mounten!
+# Keine mitgebaute leere SQLite aus dem Standalone-Trace.
+RUN rm -rf /app/data
 VOLUME /app/data
 EXPOSE 3000
 

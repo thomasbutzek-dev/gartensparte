@@ -127,7 +127,7 @@ async function compactStoredImagesUnlocked(): Promise<void> {
     removeImageOptCache(join(uploadsDir, folder));
   }
 
-  const latestSettings = getSettings();
+  const latestSettings = settingsChanged ? nextSettings : settings;
   keepReferencedFiles(join(uploadsDir, "website"), [
     latestSettings.logoFile,
     latestSettings.heroFile,

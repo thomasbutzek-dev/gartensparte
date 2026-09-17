@@ -9,6 +9,7 @@ export const users = sqliteTable("users", {
   passwordHash: text("password_hash").notNull(),
   role: text("role", { enum: ["admin", "vorstand", "kassenwart", "demo"] }).notNull(),
   active: integer("active", { mode: "boolean" }).notNull().default(true),
+  mustChangePassword: integer("must_change_password", { mode: "boolean" }).notNull().default(false),
   createdAt: text("created_at").notNull(),
 });
 
@@ -20,7 +21,9 @@ export const sessions = sqliteTable("sessions", {
 
 // ---------- Mitglieder ----------
 
-export const members = sqliteTable("members", {
+export const members = sqliteTable(
+  "members",
+  {
   id: integer("id").primaryKey({ autoIncrement: true }),
   firstName: text("first_name").notNull(),
   lastName: text("last_name").notNull(),
@@ -33,7 +36,9 @@ export const members = sqliteTable("members", {
   status: text("status", { enum: ["aktiv", "ausgeschieden"] }).notNull().default("aktiv"),
   leftAt: text("left_at"),
   note: text("note").notNull().default(""),
-});
+  },
+  (t) => [index("members_status_idx").on(t.status)],
+);
 
 // ---------- Gärten & Akten ----------
 
@@ -48,6 +53,7 @@ export const gardens = sqliteTable(
       .default("frei"),
     attributes: text("attributes").notNull().default("[]"),
     meterNumber: text("meter_number").notNull().default(""),
+    waterMeterNumber: text("water_meter_number").notNull().default(""),
     note: text("note").notNull().default(""),
     // Polygon im SVG-Koordinatensystem: JSON [[x,y],...]
     polygon: text("polygon"),
@@ -100,12 +106,13 @@ export const meterReadings = sqliteTable(
   {
     id: integer("id").primaryKey({ autoIncrement: true }),
     gardenId: integer("garden_id").notNull().references(() => gardens.id, { onDelete: "cascade" }),
+    kind: text("kind", { enum: ["strom", "wasser"] }).notNull().default("strom"),
     date: text("date").notNull(),
-    value: real("value").notNull(), // kWh-Zählerstand
+    value: real("value").notNull(),
     readBy: integer("read_by").references(() => users.id),
     note: text("note").notNull().default(""),
   },
-  (t) => [index("meter_readings_garden_idx").on(t.gardenId)],
+  (t) => [index("meter_readings_garden_idx").on(t.gardenId), index("meter_readings_kind_idx").on(t.kind)],
 );
 
 // ---------- Arbeitsstunden ----------
@@ -136,7 +143,9 @@ export const workExemptions = sqliteTable(
 
 // ---------- Termine, Aufgaben, News ----------
 
-export const events = sqliteTable("events", {
+export const events = sqliteTable(
+  "events",
+  {
   id: integer("id").primaryKey({ autoIncrement: true }),
   title: text("title").notNull(),
   date: text("date").notNull(), // ISO, ggf. mit Uhrzeit
@@ -144,7 +153,9 @@ export const events = sqliteTable("events", {
   location: text("location").notNull().default(""),
   description: text("description").notNull().default(""),
   status: text("status", { enum: ["entwurf", "veroeffentlicht"] }).notNull().default("entwurf"),
-});
+  },
+  (t) => [index("events_status_date_idx").on(t.status, t.date)],
+);
 
 export const tasks = sqliteTable("tasks", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -156,7 +167,9 @@ export const tasks = sqliteTable("tasks", {
   createdAt: text("created_at").notNull(),
 });
 
-export const news = sqliteTable("news", {
+export const news = sqliteTable(
+  "news",
+  {
   id: integer("id").primaryKey({ autoIncrement: true }),
   title: text("title").notNull(),
   body: text("body").notNull(),
@@ -164,7 +177,9 @@ export const news = sqliteTable("news", {
   pinned: integer("pinned", { mode: "boolean" }).notNull().default(false),
   publishedAt: text("published_at"),
   createdAt: text("created_at").notNull(),
-});
+  },
+  (t) => [index("news_status_idx").on(t.status)],
+);
 
 // ---------- Vereinsdokumente (öffentlich/intern) ----------
 
@@ -189,7 +204,7 @@ export const payments = sqliteTable(
     gardenId: integer("garden_id").references(() => gardens.id, { onDelete: "set null" }),
     year: integer("year").notNull(),
     type: text("type", {
-      enum: ["beitrag", "pacht", "strom", "arbeitsstunden", "umlage", "sonstiges"],
+      enum: ["beitrag", "pacht", "strom", "wasser", "arbeitsstunden", "umlage", "sonstiges"],
     }).notNull(),
     description: text("description").notNull().default(""),
     amountCents: integer("amount_cents").notNull(),
@@ -252,7 +267,9 @@ export const applicants = sqliteTable("applicants", {
   gardenId: integer("garden_id").references(() => gardens.id, { onDelete: "set null" }),
 });
 
-export const inquiries = sqliteTable("inquiries", {
+export const inquiries = sqliteTable(
+  "inquiries",
+  {
   id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull(),
   email: text("email").notNull().default(""),
@@ -260,7 +277,9 @@ export const inquiries = sqliteTable("inquiries", {
   message: text("message").notNull(),
   createdAt: text("created_at").notNull(),
   isRead: integer("is_read", { mode: "boolean" }).notNull().default(false),
-});
+  },
+  (t) => [index("inquiries_is_read_idx").on(t.isRead)],
+);
 
 // ---------- Öffentlicher Auftritt ----------
 
@@ -288,4 +307,12 @@ export const boardMembers = sqliteTable("board_members", {
 export const settings = sqliteTable("settings", {
   key: text("key").primaryKey(),
   value: text("value").notNull(),
+});
+
+/** Login-Sperren und Formular-Limits (Schlüssel z.B. login:admin oder form:hash). */
+export const rateLimits = sqliteTable("rate_limits", {
+  key: text("key").primaryKey(),
+  count: integer("count").notNull().default(0),
+  windowStart: integer("window_start").notNull(),
+  blockedUntil: integer("blocked_until").notNull().default(0),
 });

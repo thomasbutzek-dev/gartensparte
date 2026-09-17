@@ -1,6 +1,5 @@
 "use server";
 
-import { unlink } from "node:fs/promises";
 import { join } from "node:path";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
@@ -14,6 +13,8 @@ import { refreshMapPreview } from "@/lib/map-preview";
 import { readRichText } from "@/lib/rich-text";
 import { getSettings, saveSettings } from "@/lib/settings";
 import { listBoardMembers, moveInList } from "@/lib/site";
+import { revalidatePublicSite } from "@/lib/public-cache";
+import { deleteStoredFile } from "@/lib/form";
 
 function text(formData: FormData, key: string, max = 2000): string {
   return String(formData.get(key) ?? "").trim().slice(0, max);
@@ -25,6 +26,7 @@ function revalidatePublic() {
   revalidatePath("/icon");
   revalidatePath("/apple-icon");
   revalidatePath("/favicon.ico");
+  revalidatePublicSite();
 }
 
 export async function updateVereinContact(formData: FormData) {
@@ -107,7 +109,7 @@ export async function uploadLogo(formData: FormData) {
   if ("error" in saved) redirect("/admin/website?fehler=bild");
   const current = getSettings();
   if (current.logoFile) {
-    await unlink(join(uploadsDir, "website", current.logoFile)).catch(() => {});
+    await deleteStoredFile(join(uploadsDir, "website", current.logoFile));
   }
   saveSettings({ ...current, logoFile: saved.fileName });
   revalidatePublic();
@@ -118,7 +120,7 @@ export async function removeLogo() {
   await requireWrite();
   const current = getSettings();
   if (current.logoFile) {
-    await unlink(join(uploadsDir, "website", current.logoFile)).catch(() => {});
+    await deleteStoredFile(join(uploadsDir, "website", current.logoFile));
   }
   saveSettings({ ...current, logoFile: "" });
   revalidatePublic();
@@ -133,7 +135,7 @@ export async function uploadHero(formData: FormData) {
   if ("error" in saved) redirect("/admin/website?fehler=bild");
   const current = getSettings();
   if (current.heroFile) {
-    await unlink(join(uploadsDir, "website", current.heroFile)).catch(() => {});
+    await deleteStoredFile(join(uploadsDir, "website", current.heroFile));
   }
   saveSettings({ ...current, heroFile: saved.fileName });
   revalidatePublic();
@@ -152,7 +154,7 @@ export async function uploadSceneImage(slot: number, formData: FormData) {
   if ("error" in saved) redirect("/admin/website?fehler=bild");
   const current = getSettings();
   if (current[key]) {
-    await unlink(join(uploadsDir, "website", current[key])).catch(() => {});
+    await deleteStoredFile(join(uploadsDir, "website", current[key]));
   }
   saveSettings({ ...current, [key]: saved.fileName });
   revalidatePublic();
@@ -165,7 +167,7 @@ export async function removeSceneImage(slot: number) {
   if (!key) redirect("/admin/website");
   const current = getSettings();
   if (current[key]) {
-    await unlink(join(uploadsDir, "website", current[key])).catch(() => {});
+    await deleteStoredFile(join(uploadsDir, "website", current[key]));
   }
   saveSettings({ ...current, [key]: "" });
   revalidatePublic();
@@ -176,7 +178,7 @@ export async function removeHero() {
   await requireWrite();
   const current = getSettings();
   if (current.heroFile) {
-    await unlink(join(uploadsDir, "website", current.heroFile)).catch(() => {});
+    await deleteStoredFile(join(uploadsDir, "website", current.heroFile));
   }
   saveSettings({ ...current, heroFile: "" });
   revalidatePublic();
@@ -231,7 +233,7 @@ export async function deleteGalleryImage(imageId: number) {
   const image = db.select().from(tables.galleryImages).where(eq(tables.galleryImages.id, imageId)).get();
   if (image) {
     db.delete(tables.galleryImages).where(eq(tables.galleryImages.id, imageId)).run();
-    await unlink(join(uploadsDir, "galerie", image.fileName)).catch(() => {});
+    await deleteStoredFile(join(uploadsDir, "galerie", image.fileName));
   }
   revalidatePublic();
   redirect("/admin/website?ok=galerie");
@@ -276,7 +278,7 @@ export async function updateBoardMember(memberId: number, formData: FormData) {
     const saved = await saveImageUpload(join(uploadsDir, "vorstand"), file, "card");
     if ("error" in saved) redirect("/admin/website?fehler=bild#vorstand");
     if (current.photoFile) {
-      await unlink(join(uploadsDir, "vorstand", current.photoFile)).catch(() => {});
+      await deleteStoredFile(join(uploadsDir, "vorstand", current.photoFile));
     }
     photoFile = saved.fileName;
   }
@@ -315,7 +317,7 @@ export async function deleteBoardMember(memberId: number) {
   if (current) {
     db.delete(tables.boardMembers).where(eq(tables.boardMembers.id, memberId)).run();
     if (current.photoFile) {
-      await unlink(join(uploadsDir, "vorstand", current.photoFile)).catch(() => {});
+      await deleteStoredFile(join(uploadsDir, "vorstand", current.photoFile));
     }
   }
   revalidatePublic();

@@ -2,8 +2,7 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { and, eq } from "drizzle-orm";
-import { db, tables } from "@/db";
+import { getPublicNewsItem } from "@/lib/public-cache";
 import { formatDate } from "@/lib/format";
 import { badge } from "@/lib/ui";
 import RichText from "@/components/RichText";
@@ -11,11 +10,7 @@ import SiteContainer from "@/components/SiteContainer";
 
 export default async function NewsDetailPage({ params }: PageProps<"/news/[id]">) {
   const { id } = await params;
-  const item = db
-    .select()
-    .from(tables.news)
-    .where(and(eq(tables.news.id, Number(id)), eq(tables.news.status, "veroeffentlicht")))
-    .get();
+  const item = await getPublicNewsItem(Number(id));
   if (!item) notFound();
 
   return (

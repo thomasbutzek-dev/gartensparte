@@ -2,17 +2,18 @@ export const dynamic = "force-dynamic";
 
 import type { Metadata } from "next";
 import Link from "next/link";
-import { boardExtraText, getSettings, officeHoursLabel } from "@/lib/settings";
-import { boardPhotoUrl, listBoardMembers } from "@/lib/site";
+import { boardExtraText, officeHoursLabel } from "@/lib/settings";
+import { boardPhotoUrl } from "@/lib/site";
+import { getPublicBoard, getPublicSettings } from "@/lib/public-cache";
 import { card } from "@/lib/ui";
 import RichText from "@/components/RichText";
 import SiteContainer from "@/components/SiteContainer";
 
 export const metadata: Metadata = { title: "Vorstand & Ansprechpartner" };
 
-export default function VorstandPage() {
-  const settings = getSettings();
-  const board = listBoardMembers();
+export default async function VorstandPage() {
+  const settings = await getPublicSettings();
+  const board = await getPublicBoard();
 
   return (
     <SiteContainer className="space-y-8 py-10">

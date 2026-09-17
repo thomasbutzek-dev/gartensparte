@@ -1,18 +1,18 @@
 import Link from "next/link";
-import { asc, desc, eq, isNull } from "drizzle-orm";
+import { asc, desc, eq, isNull, notInArray } from "drizzle-orm";
 import { db, tables } from "@/db";
-import { requireUser, canSeeMoney } from "@/lib/auth";
+import { requireUser } from "@/lib/auth";
 import { formatDate } from "@/lib/format";
-import { archiveTypeLabels } from "@/lib/letter-catalog";
-import { btn, btnPrimary, card, input, label, tableClass, td, th } from "@/lib/ui";
-import { runAnnualInvoices } from "@/app/admin/zahlungen/actions";
+import { boardArchiveTypeLabels, isMoneyLetterGroup } from "@/lib/letter-catalog";
+import { btn, card, tableClass, td, th } from "@/lib/ui";
 import { deleteLetter } from "./actions";
 import LetterComposer from "./LetterComposer";
 
+const MONEY_TYPES = ["rechnung", "mahnung"] as const;
+
 export default async function SchriftverkehrPage({ searchParams }: PageProps<"/admin/schriftverkehr">) {
-  const user = await requireUser();
+  await requireUser();
   const params = await searchParams;
-  const runYear = new Date().getFullYear();
   const typeFilter = typeof params.typ === "string" ? params.typ : "";
 
   const letters = db
@@ -29,6 +29,7 @@ export default async function SchriftverkehrPage({ searchParams }: PageProps<"/a
     })
     .from(tables.letters)
     .leftJoin(tables.members, eq(tables.letters.memberId, tables.members.id))
+    .where(notInArray(tables.letters.type, [...MONEY_TYPES]))
     .orderBy(desc(tables.letters.createdAt))
     .all()
     .filter((letter) => {
@@ -41,7 +42,7 @@ export default async function SchriftverkehrPage({ searchParams }: PageProps<"/a
     .from(tables.letterTemplates)
     .orderBy(asc(tables.letterTemplates.letterGroup), asc(tables.letterTemplates.name))
     .all()
-    .filter((template) => template.type !== "rechnung")
+    .filter((template) => !isMoneyLetterGroup(template.letterGroup))
     .map((template) => ({
       id: template.id,
       type: template.type,
@@ -84,15 +85,6 @@ export default async function SchriftverkehrPage({ searchParams }: PageProps<"/a
       )}
       {params.fehler === "eingabe" && <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">Bitte Empfänger und die nötigen Angaben eintragen.</p>}
       {params.fehler === "mitglieder" && <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">Keine aktiven Mitglieder vorhanden.</p>}
-
-      {typeof params.lauf === "string" && (
-        <p className="rounded-md bg-green-100 px-4 py-3 text-green-800">
-          Rechnungslauf abgeschlossen: {params.lauf} Rechnung(en) erstellt, {params.uebersprungen ?? 0} Mitglied(er) übersprungen (bereits abgerechnet).
-          Die PDFs stehen unten im Archiv. Offene Posten unter{" "}
-          <Link href="/admin/zahlungen" className="underline">Zahlungen</Link>.
-        </p>
-      )}
-      {params.fehler === "jahr" && <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">Bitte ein gültiges Jahr angeben.</p>}
       {params.fehler === "vorlage" && (
         <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">
           Briefvorlage fehlt – unter{" "}
@@ -101,31 +93,13 @@ export default async function SchriftverkehrPage({ searchParams }: PageProps<"/a
       )}
 
       <p className="text-sm text-stone-500">
-        Erst der Entwurf, dann das PDF. Mahnungen zu offenen Posten können Sie auch unter{" "}
-        <Link href="/admin/zahlungen" className="text-green-700 hover:underline">Zahlungen</Link> anstoßen.
+        Abmahnungen, Kündigungen und Rundschreiben. Rechnungen und Mahnungen liegen unter Zahlungen (Kasse).
       </p>
-
-      {canSeeMoney(user) && (
-        <section id="rechnungslauf" className={`${card} space-y-3`}>
-          <h2 className="text-lg font-semibold">Jahresrechnungen</h2>
-          <p className="text-sm text-stone-500">
-            Erstellt pro Mitglied mit Garten eine Rechnung (Pacht, Beitrag, Strom, fehlende Arbeitsstunden des Vorjahres, Umlage)
-            samt PDF. Bereits abgerechnete Mitglieder werden übersprungen. Sätze unter Einstellungen.
-          </p>
-          <form action={runAnnualInvoices} className="flex flex-wrap items-end gap-3">
-            <div>
-              <label className={label} htmlFor="runYear">Abrechnungsjahr</label>
-              <input id="runYear" name="year" type="number" defaultValue={runYear} className={`${input} w-28`} />
-            </div>
-            <button className={btnPrimary}>Rechnungslauf starten</button>
-          </form>
-        </section>
-      )}
 
       <LetterComposer templates={templates} tenancies={activeTenancies} />
 
       <div className="flex flex-wrap gap-2 text-sm">
-        {[["", "Alle"], ["entwurf", "Entwürfe"], ...Object.entries(archiveTypeLabels)].map(([value, text]) => (
+        {[["", "Alle"], ["entwurf", "Entwürfe"], ...Object.entries(boardArchiveTypeLabels)].map(([value, text]) => (
           <Link
             key={value}
             href={`/admin/schriftverkehr${value ? `?typ=${value}` : ""}`}
@@ -153,7 +127,7 @@ export default async function SchriftverkehrPage({ searchParams }: PageProps<"/a
                 <td className={td}>{formatDate(letter.createdAt)}</td>
                 <td className={td}>
                   {letter.status === "entwurf" ? "Entwurf · " : ""}
-                  {archiveTypeLabels[letter.type] ?? letter.type}
+                  {boardArchiveTypeLabels[letter.type] ?? letter.type}
                   {letter.number && !letter.number.startsWith("zahlung-") ? ` ${letter.number}` : ""}
                 </td>
                 <td className={td}>

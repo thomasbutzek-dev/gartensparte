@@ -80,6 +80,14 @@ export default async function EinstellungenPage({ searchParams }: PageProps<"/ad
               <input id="stromGrundgebuehr" name="stromGrundgebuehr" defaultValue={euroValue(s.stromGrundgebuehrCents)} className={input} inputMode="decimal" />
             </div>
             <div>
+              <label className={label} htmlFor="wasserProM3">Wasser €/m³</label>
+              <input id="wasserProM3" name="wasserProM3" defaultValue={euroValue(s.wasserCentProM3)} className={input} inputMode="decimal" />
+            </div>
+            <div>
+              <label className={label} htmlFor="wasserGrundgebuehr">Wasser-Grundgebühr €/Jahr</label>
+              <input id="wasserGrundgebuehr" name="wasserGrundgebuehr" defaultValue={euroValue(s.wasserGrundgebuehrCents)} className={input} inputMode="decimal" />
+            </div>
+            <div>
               <label className={label} htmlFor="arbeitsstundenSoll">Arbeitsstunden-Soll/Jahr</label>
               <input id="arbeitsstundenSoll" name="arbeitsstundenSoll" defaultValue={s.arbeitsstundenSoll} className={input} inputMode="decimal" />
             </div>

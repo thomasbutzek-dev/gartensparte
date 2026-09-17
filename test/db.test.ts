@@ -23,8 +23,12 @@ describe("Seed", () => {
   it("legt Admin- und Demo-Konto an", () => {
     const users = db.select().from(tables.users).all();
     expect(users).toHaveLength(2);
-    expect(users.find((user) => user.username === "admin")?.role).toBe("admin");
-    expect(users.find((user) => user.username === "demo")?.role).toBe("demo");
+    const admin = users.find((user) => user.username === "admin");
+    const demo = users.find((user) => user.username === "demo");
+    expect(admin?.role).toBe("admin");
+    expect(admin?.mustChangePassword).toBe(true);
+    expect(demo?.role).toBe("demo");
+    expect(demo?.mustChangePassword).toBe(false);
   });
 
   it("legt die Briefvorlagen an", async () => {

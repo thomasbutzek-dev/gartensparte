@@ -8,6 +8,7 @@ import { db, tables } from "@/db";
 import { requireWrite } from "@/lib/auth";
 import { parseDateTimeInput } from "@/lib/format";
 import { readRichText } from "@/lib/rich-text";
+import { revalidatePublicSite } from "@/lib/public-cache";
 
 const eventSchema = z.object({
   title: z.string().trim().min(1).max(200),
@@ -19,7 +20,7 @@ const eventSchema = z.object({
 });
 
 function parseEvent(formData: FormData) {
-  return eventSchema.parse({
+  const parsed = eventSchema.safeParse({
     title: formData.get("title"),
     date: parseDateTimeInput(String(formData.get("date") ?? "")) ?? "",
     endDate: parseDateTimeInput(String(formData.get("endDate") ?? "")) ?? "",
@@ -27,17 +28,20 @@ function parseEvent(formData: FormData) {
     description: readRichText(formData, "description", 8000),
     status: formData.get("status") ?? "entwurf",
   });
+  return parsed.success ? parsed.data : null;
 }
 
 function revalidate() {
   revalidatePath("/admin/termine");
   revalidatePath("/termine");
   revalidatePath("/");
+  revalidatePublicSite();
 }
 
 export async function createEvent(formData: FormData) {
   await requireWrite();
   const data = parseEvent(formData);
+  if (!data) redirect("/admin/termine?fehler=eingabe");
   db.insert(tables.events).values({ ...data, endDate: data.endDate || null }).run();
   revalidate();
   redirect("/admin/termine?ok=1");
@@ -46,6 +50,7 @@ export async function createEvent(formData: FormData) {
 export async function updateEvent(eventId: number, formData: FormData) {
   await requireWrite();
   const data = parseEvent(formData);
+  if (!data) redirect(`/admin/termine/${eventId}?fehler=eingabe`);
   db.update(tables.events).set({ ...data, endDate: data.endDate || null }).where(eq(tables.events.id, eventId)).run();
   revalidate();
   redirect("/admin/termine?ok=1");

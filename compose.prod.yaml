@@ -4,7 +4,13 @@
 #
 # Nötige Variablen (Docker Manager "Environment" oder .env):
 #   ADMIN_START_PASSWORD=geheim        (nur beim allerersten Start relevant)
-#   DEMO_START_PASSWORD=geheim         (nur beim allerersten Start relevant)
+# Demo-Konto: in Produktion aus. Nur wenn wirklich nötig:
+#   ENABLE_DEMO=1
+#   DEMO_START_PASSWORD=geheim
+# Spam-Prüfung (Cloudflare Turnstile), sonst bleiben Honeypot und Limit:
+#   TURNSTILE_SITE_KEY=...
+#   TURNSTILE_SECRET=...
+#   TURNSTILE_HOSTNAMES=gartensparte.thomasbutzek.de
 #   IMAGE_TAG=latest                   (optional)
 name: gartensparte
 
@@ -21,7 +27,9 @@ services:
       - gartensparte_data:/app/data
     environment:
       ADMIN_START_PASSWORD: ${ADMIN_START_PASSWORD:-gartensparte-start}
-      DEMO_START_PASSWORD: ${DEMO_START_PASSWORD:-gartensparte-demo}
+      TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:-}
+      TURNSTILE_SECRET: ${TURNSTILE_SECRET:-}
+      TURNSTILE_HOSTNAMES: ${TURNSTILE_HOSTNAMES:-gartensparte.thomasbutzek.de}
     security_opt:
       - no-new-privileges:true
     labels:

@@ -1,22 +1,16 @@
 export const dynamic = "force-dynamic";
 
 import type { Metadata } from "next";
-import { asc, eq } from "drizzle-orm";
-import { db, tables } from "@/db";
 import { formatDateTime, today } from "@/lib/format";
+import { getPublicEvents } from "@/lib/public-cache";
 import { card } from "@/lib/ui";
 import RichText from "@/components/RichText";
 import SiteContainer from "@/components/SiteContainer";
 
 export const metadata: Metadata = { title: "Termine" };
 
-export default function TerminePage() {
-  const events = db
-    .select()
-    .from(tables.events)
-    .where(eq(tables.events.status, "veroeffentlicht"))
-    .orderBy(asc(tables.events.date))
-    .all();
+export default async function TerminePage() {
+  const events = await getPublicEvents();
   const upcoming = events.filter((event) => event.date >= today());
   const past = events.filter((event) => event.date < today()).reverse().slice(0, 10);
 

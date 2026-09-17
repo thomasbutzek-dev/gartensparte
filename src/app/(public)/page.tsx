@@ -1,11 +1,18 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
-import { asc, eq } from "drizzle-orm";
-import { db, tables } from "@/db";
-import { boardExtraText, getSettings, hasMapPoint, officeHoursLabel, osmEmbedUrl } from "@/lib/settings";
-import { addressLines, boardPhotoUrl, freeGardenCtaLabel, gardenCounts, listBoardMembers, listGalleryImages, listPublishedNews, mapsSearchUrl } from "@/lib/site";
-import { formatDate, formatDateTime, today } from "@/lib/format";
+import { boardExtraText, hasMapPoint, officeHoursLabel, osmEmbedUrl } from "@/lib/settings";
+import { addressLines, boardPhotoUrl, freeGardenCtaLabel, mapsSearchUrl } from "@/lib/site";
+import {
+  getPublicBoard,
+  getPublicGallery,
+  getPublicGardenCounts,
+  getPublicNews,
+  getPublicSettings,
+  getPublicUpcomingEvents,
+} from "@/lib/public-cache";
+import { versionedAssetUrl } from "@/lib/media";
+import { formatDate, formatDateTime } from "@/lib/format";
 import { badge, card, photoMuted, photoScrim, photoText, photoWash } from "@/lib/ui";
 import SiteContainer from "@/components/SiteContainer";
 import GardenHeroArt from "@/components/GardenHeroArt";
@@ -14,20 +21,13 @@ import PublicMap from "@/components/PublicMap";
 import ImpressionStrip from "@/components/ImpressionStrip";
 import RichText from "@/components/RichText";
 
-export default function StartPage() {
-  const settings = getSettings();
-  const occupancy = gardenCounts();
-  const nextEvents = db
-    .select()
-    .from(tables.events)
-    .where(eq(tables.events.status, "veroeffentlicht"))
-    .orderBy(asc(tables.events.date))
-    .all()
-    .filter((event) => event.date >= today())
-    .slice(0, 3);
-  const latestNews = listPublishedNews(3);
-  const gallery = listGalleryImages(true).slice(0, 6);
-  const board = listBoardMembers().slice(0, 4);
+export default async function StartPage() {
+  const settings = await getPublicSettings();
+  const occupancy = await getPublicGardenCounts();
+  const nextEvents = await getPublicUpcomingEvents();
+  const latestNews = await getPublicNews(3);
+  const gallery = (await getPublicGallery(true)).slice(0, 6);
+  const board = (await getPublicBoard()).slice(0, 4);
   const mapsUrl = mapsSearchUrl(settings);
   const address = addressLines(settings);
 
@@ -37,7 +37,7 @@ export default function StartPage() {
         {settings.heroFile ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src="/api/hero"
+            src={versionedAssetUrl("/api/hero", settings.heroFile)}
             alt=""
             fetchPriority="high"
             decoding="async"
@@ -51,7 +51,7 @@ export default function StartPage() {
               {settings.logoFile ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src="/api/logo"
+                  src={versionedAssetUrl("/api/logo", settings.logoFile)}
                   alt=""
                   width={64}
                   height={64}

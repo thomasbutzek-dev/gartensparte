@@ -19,7 +19,7 @@ Vereinsverwaltung für eine Gartensparte plus öffentliche Website – als eine 
 - **Zahlungen:** Jahres-Rechnungslauf (Pacht + Beitrag + Strom + fehlende Arbeitsstunden + Umlage) mit PDF je Mitglied, offene Posten, Überfällig-Ansicht, Teilzahlungen, Mahnstufen, CSV-Export für die Kassenprüfung.
 - **Strom:** mobile „Ablese-Tour“ (Garten für Garten am Handy), Jahresverbrauch fließt automatisch in den Rechnungslauf.
 - **Arbeitsstunden:** Soll/Ist je Mitglied; Fehlstunden werden im Rechnungslauf berechnet.
-- **Schriftverkehr:** Vorlagen (Mahnung, Abmahnung, Kündigung nach BKleingG, Rundschreiben), erst Entwurf bearbeiten, dann PDF. Jahresrechnungslauf, Archiv.
+- **Schriftverkehr:** Abmahnungen, Kündigungen und Rundschreiben für den Vorstand (Vorlagen, Entwurf, dann PDF). **Rechnungen und Mahnungen** nur unter Zahlungen (Kasse), inklusive Jahresrechnungslauf.
 - **Außerdem:** Termine & News mit Entwurf/Veröffentlicht, Aufgaben, Dokumentenverwaltung (öffentlich/intern), Warteliste, Posteingang (Kontaktformular), Benutzerverwaltung, Einstellungen (Beitragssätze, Briefkopf, Bankverbindung, Website-Texte).
 
 ### Rollen
@@ -27,7 +27,7 @@ Vereinsverwaltung für eine Gartensparte plus öffentliche Website – als eine 
 |---|---|
 | `admin` | alles, inkl. Benutzer & Einstellungen |
 | `kassenwart` | alles Fachliche inkl. Zahlungen/Rechnungen/Mahnungen |
-| `vorstand` | alles außer Kasse, Benutzer und Einstellungen |
+| `vorstand` | alles außer Kasse (Zahlungen, Rechnungen, Mahnungen), Benutzer und Einstellungen. Briefe (Abmahnung, Kündigung, Rundschreiben) ja. |
 | `demo` | alles anschauen (inkl. Kasse und Einstellungen), nichts speichern, keine Konten |
 
 ## Entwicklung
@@ -40,9 +40,9 @@ npm run lint
 node scripts/smoke.mjs http://localhost:3000   # E2E-Rauchtest gegen laufenden Server
 ```
 
-Beim ersten Start wird automatisch angelegt: Admin-Konto (`admin` / `gartensparte-start`, per `ADMIN_START_PASSWORD` überschreibbar), Demo-Konto (`demo` / `gartensparte-demo`, per `DEMO_START_PASSWORD` überschreibbar) und Briefvorlagen. Die Gärten legt der Vorstand unter Gärten an (Anzahl 1 bis N). Ein bestehendes System bekommt das Demo-Konto nicht automatisch – dann unter Konten anlegen.
+Beim ersten Start wird automatisch das Admin-Konto angelegt (`admin` / `gartensparte-start`, per `ADMIN_START_PASSWORD` überschreibbar). Nach der ersten Anmeldung muss das Passwort gewechselt werden – das Startpasswort gilt nicht weiter. Das Demo-Konto (`demo` / `gartensparte-demo`) gibt es nur in der Entwicklung bzw. mit `ENABLE_DEMO=1`. Im Produktivbetrieb ist es aus. Die Gärten legt der Vorstand unter Gärten an (Anzahl 1 bis N).
 
-**Nach dem ersten Login sofort unter „Benutzer“ das Admin-Passwort ändern.**
+**Nach dem ersten Login sofort ein eigenes Passwort festlegen** (die Anwendung verlangt das).
 
 ## Betrieb mit Docker
 
@@ -52,9 +52,10 @@ ADMIN_START_PASSWORD='sicheres-startpasswort' docker compose up -d --build
 
 - Anwendung: Port 3000
 - Alle Daten (SQLite-DB, Uploads, PDFs) liegen im gemounteten Ordner `./data`
+- Öffentliche Seiten werden **nicht** beim Image-Build eingefroren (die Docker-Datenbank ist dann noch leer). Die HTML-Seiten entstehen erst zur Laufzeit; Vereinsdaten liegen danach kurz im Speicher (etwa 2 Minuten, nach Änderungen in der Verwaltung sofort neu).
 
 ### VPS hinter Traefik
-`compose.prod.yaml` nutzt das fertige Image `ghcr.io/thomasbutzek-dev/gartensparte` (gebaut per GitHub Actions bei jedem Push) und meldet sich per Labels bei einem laufenden Traefik an. Variablen: `SITE_DOMAIN` (Subdomain), `ADMIN_START_PASSWORD`. Daten liegen im Docker-Volume `gartensparte_data`.
+`compose.prod.yaml` nutzt das fertige Image `ghcr.io/thomasbutzek-dev/gartensparte` (gebaut per GitHub Actions bei jedem Push) und meldet sich per Labels bei einem laufenden Traefik an. Variablen: `ADMIN_START_PASSWORD`. Demo bleibt aus, solange `ENABLE_DEMO` nicht gesetzt ist. Daten liegen im Docker-Volume `gartensparte_data`.
 
 ### Sicherung
 Der komplette Zustand steckt im Ordner `data/`. Sicherung = Ordner kopieren (bei laufendem Betrieb idealerweise Container kurz stoppen oder `sqlite3 data/gartensparte.sqlite ".backup ..."` verwenden). Empfehlung: tägliche Kopie per Cron/Aufgabenplanung auf ein zweites Medium.
@@ -72,5 +73,6 @@ data/              Laufzeitdaten – nicht im Git, sichern!
 
 ## Hinweise
 - **Kündigungen:** Das erzeugte PDF wahrt nicht die gesetzliche Schriftform – ausdrucken, unterschreiben und nachweisbar zustellen (Einwurf-Einschreiben/Zeugen).
-- **Rechnungslauf** ist idempotent: Mitglieder mit bereits berechnetem Jahresbeitrag werden übersprungen.
+- **Rechnungslauf** ist idempotent: Mitglieder mit bereits berechnetem Jahresbeitrag werden übersprungen. Die Posten stehen sofort, die PDFs werden im Hintergrund fertiggestellt.
 - Zähler ohne Vorjahres-Ablesung werden im Rechnungslauf ohne Stromposition abgerechnet (Position kann manuell ergänzt werden).
+- **Kontaktformular:** Honeypot, Limit, optional Cloudflare Turnstile (`TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET`, `TURNSTILE_HOSTNAMES`). Ohne Schlüssel bleibt das Formular wie bisher.

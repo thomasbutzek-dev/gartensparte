@@ -4,6 +4,7 @@ import { getSettings, saveSettings } from "@/lib/settings";
 export const defaultGardenDocCategories = [
   { value: "pachtvertrag", label: "Pachtvertrag" },
   { value: "strom", label: "Stromabrechnung" },
+  { value: "wasser", label: "Wasserabrechnung" },
   { value: "foto", label: "Foto" },
   { value: "sonstiges", label: "Sonstiges" },
 ] as const;

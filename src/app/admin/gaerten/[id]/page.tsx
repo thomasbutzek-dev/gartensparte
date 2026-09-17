@@ -8,6 +8,7 @@ import { notFound } from "next/navigation";
 import { asc, desc, eq } from "drizzle-orm";
 import { db, tables } from "@/db";
 import { requireUser, canSeeMoney } from "@/lib/auth";
+import { isMoneyLetterType } from "@/lib/letter-catalog";
 import { DateField } from "@/components/DateField";
 import { euro, formatDate, today } from "@/lib/format";
 import SaveButton from "@/components/SaveButton";
@@ -72,7 +73,7 @@ export default async function GartenAktePage({ params, searchParams }: PageProps
     .from(tables.meterReadings)
     .where(eq(tables.meterReadings.gardenId, garden.id))
     .orderBy(desc(tables.meterReadings.date), desc(tables.meterReadings.id))
-    .limit(5)
+    .limit(10)
     .all();
 
   const gardenPayments = canSeeMoney(user)
@@ -90,7 +91,8 @@ export default async function GartenAktePage({ params, searchParams }: PageProps
     .from(tables.letters)
     .where(eq(tables.letters.gardenId, garden.id))
     .orderBy(desc(tables.letters.createdAt))
-    .all();
+    .all()
+    .filter((letter) => canSeeMoney(user) || !isMoneyLetterType(letter.type));
 
   const updateAction = updateGarden.bind(null, garden.id);
   const tenantAction = changeTenant.bind(null, garden.id);
@@ -145,6 +147,9 @@ export default async function GartenAktePage({ params, searchParams }: PageProps
           Upload fehlgeschlagen. Erlaubt sind PDF, JPG, PNG, WebP, DOCX, XLSX bis 15 MB.
         </p>
       )}
+      {query.fehler === "eingabe" && (
+        <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">Bitte Eingaben prüfen.</p>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Stammdaten */}
@@ -159,20 +164,26 @@ export default async function GartenAktePage({ params, searchParams }: PageProps
               <label className={label} htmlFor="sizeSqm">Größe (m²)</label>
               <input id="sizeSqm" name="sizeSqm" defaultValue={garden.sizeSqm ?? ""} className={input} inputMode="decimal" />
             </div>
-            <div>
-              <label className={label} htmlFor="status">Status</label>
-              <select id="status" name="status" defaultValue={garden.status} className={input}>
-                {Object.entries(gardenStatusLabels).map(([value, text]) => (
-                  <option key={value} value={value}>{text}</option>
-                ))}
-              </select>
-              <p className="mt-1 text-xs text-stone-500">„Nicht vergeben“ = diese Nummer gibt es in der Anlage nicht.</p>
+            <div className="space-y-4">
+              <div>
+                <label className={label} htmlFor="status">Status</label>
+                <select id="status" name="status" defaultValue={garden.status} className={input}>
+                  {Object.entries(gardenStatusLabels).map(([value, text]) => (
+                    <option key={value} value={value}>{text}</option>
+                  ))}
+                </select>
+                <p className="mt-1 text-xs text-stone-500">„Nicht vergeben“ = diese Nummer gibt es in der Anlage nicht.</p>
+              </div>
+              <div>
+                <label className={label} htmlFor="meterNumber">Stromzähler-Nr.</label>
+                <input id="meterNumber" name="meterNumber" defaultValue={garden.meterNumber} className={input} />
+              </div>
+              <div>
+                <label className={label} htmlFor="waterMeterNumber">Wasserzähler-Nr.</label>
+                <input id="waterMeterNumber" name="waterMeterNumber" defaultValue={garden.waterMeterNumber} className={input} />
+              </div>
             </div>
             <GardenMerkmaleFields selected={parseGardenAttributes(garden.attributes)} />
-          </div>
-          <div>
-            <label className={label} htmlFor="meterNumber">Stromzähler-Nr.</label>
-            <input id="meterNumber" name="meterNumber" defaultValue={garden.meterNumber} className={input} />
           </div>
           <div>
             <label className={label} htmlFor="note">Bemerkung</label>
@@ -322,14 +333,20 @@ export default async function GartenAktePage({ params, searchParams }: PageProps
           <ul className="space-y-1 text-sm">
             {readings.map((r) => (
               <li key={r.id}>
-                {formatDate(r.date)}: <strong>{r.value.toLocaleString("de-DE")} kWh</strong>
+                {formatDate(r.date)}: <strong>{r.value.toLocaleString("de-DE")} {r.kind === "wasser" ? "m³" : "kWh"}</strong>
+                {r.kind === "wasser" ? " Wasser" : " Strom"}
                 {r.note && <span className="text-stone-400"> · {r.note}</span>}
               </li>
             ))}
           </ul>
-          <Link href={`/admin/ablesen?nr=${garden.number}`} className="mt-3 inline-block text-sm text-green-700 hover:underline">
-            Zählerstand erfassen →
-          </Link>
+          <p className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+            <Link href={`/admin/ablesen?nr=${garden.number}`} className="text-green-700 hover:underline">
+              Strom ablesen →
+            </Link>
+            <Link href={`/admin/ablesen/wasser?nr=${garden.number}`} className="text-green-700 hover:underline">
+              Wasser ablesen →
+            </Link>
+          </p>
         </section>
 
         {/* Zahlungen & Schreiben */}

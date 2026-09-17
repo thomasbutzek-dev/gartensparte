@@ -19,6 +19,14 @@ export function missingWorkHours(logged: number, exempt: boolean, soll: number):
   return Math.max(0, soll - creditedWorkHours(logged, exempt, soll));
 }
 
+/** Pacht im Kalenderjahr: von Anfang bis Jahresende, oder ohne Enddatum. */
+export function tenancyOverlapsYear(startDate: string, endDate: string | null | undefined, year: number): boolean {
+  const first = `${year}-01-01`;
+  const last = `${year}-12-31`;
+  if (!startDate || startDate > last) return false;
+  return !endDate || endDate >= first;
+}
+
 export function listWorkDutyOptions(): string[] {
   const extras = db
     .select({ reason: tables.workExemptions.reason })

@@ -51,6 +51,9 @@ export default async function SchnellerfassungPage({ searchParams }: PageProps<"
       {params.fehler === "vergeben" && (
         <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">Diese Nummer ist schon einem anderen Garten zugeordnet.</p>
       )}
+      {params.fehler === "eingabe" && (
+        <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">Bitte Eingaben prüfen.</p>
+      )}
 
       <form action={action} className={`${card} space-y-4`}>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -62,19 +65,25 @@ export default async function SchnellerfassungPage({ searchParams }: PageProps<"
             <label className={label} htmlFor="sizeSqm">Größe (m²)</label>
             <input id="sizeSqm" name="sizeSqm" defaultValue={garden.sizeSqm ?? ""} className={input} inputMode="decimal" autoFocus />
           </div>
-          <div>
-            <label className={label} htmlFor="status">Status</label>
-            <select id="status" name="status" defaultValue={garden.status} className={input}>
-              {Object.entries(gardenStatusLabels).map(([value, text]) => (
-                <option key={value} value={value}>{text}</option>
-              ))}
-            </select>
+          <div className="space-y-4">
+            <div>
+              <label className={label} htmlFor="status">Status</label>
+              <select id="status" name="status" defaultValue={garden.status} className={input}>
+                {Object.entries(gardenStatusLabels).map(([value, text]) => (
+                  <option key={value} value={value}>{text}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className={label} htmlFor="meterNumber">Stromzähler-Nr.</label>
+              <input id="meterNumber" name="meterNumber" defaultValue={garden.meterNumber} className={input} />
+            </div>
+            <div>
+              <label className={label} htmlFor="waterMeterNumber">Wasserzähler-Nr.</label>
+              <input id="waterMeterNumber" name="waterMeterNumber" defaultValue={garden.waterMeterNumber} className={input} />
+            </div>
           </div>
           <GardenMerkmaleFields selected={parseGardenAttributes(garden.attributes)} />
-        </div>
-        <div>
-          <label className={label} htmlFor="meterNumber">Stromzähler-Nr.</label>
-          <input id="meterNumber" name="meterNumber" defaultValue={garden.meterNumber} className={input} />
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>

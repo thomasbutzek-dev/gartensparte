@@ -5,6 +5,7 @@ import SaveButton from "@/components/SaveButton";
 import SaveNotice from "@/components/SaveNotice";
 import { requireUser } from "@/lib/auth";
 import { hasMapPreviewFile } from "@/lib/map-preview";
+import { versionedAssetUrl } from "@/lib/media";
 import { getSettings } from "@/lib/settings";
 import { boardPhotoUrl, listBoardMembers, listGalleryImages } from "@/lib/site";
 import { btn, btnDanger, card, input, label } from "@/lib/ui";
@@ -109,7 +110,7 @@ export default async function WebsitePage({ searchParams }: PageProps<"/admin/we
           <h2 className="text-lg font-semibold">Logo</h2>
           {settings.logoFile ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src="/api/logo" alt="Aktuelles Logo" className="h-20 w-auto rounded bg-stone-50 object-contain p-2" />
+            <img src={versionedAssetUrl("/api/logo", settings.logoFile)} alt="Aktuelles Logo" className="h-20 w-auto rounded bg-stone-50 object-contain p-2" />
           ) : (
             <p className="text-sm text-stone-500">Noch kein Logo. Im Kopf erscheint dann der Vereinsname.</p>
           )}
@@ -131,7 +132,7 @@ export default async function WebsitePage({ searchParams }: PageProps<"/admin/we
           <h2 className="text-lg font-semibold">Titelbild (Startseite)</h2>
           {settings.heroFile ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src="/api/hero" alt="Aktuelles Titelbild" className="h-28 w-full rounded object-cover" />
+            <img src={versionedAssetUrl("/api/hero", settings.heroFile)} alt="Aktuelles Titelbild" className="h-28 w-full rounded object-cover" />
           ) : (
             <p className="text-sm text-stone-500">Ohne Foto erscheint ein grüner Hintergrund.</p>
           )}
@@ -217,7 +218,7 @@ export default async function WebsitePage({ searchParams }: PageProps<"/admin/we
               <p className="text-sm font-medium">Hintergrund Kachel {slot}</p>
               {image ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={`/api/kachel/${slot}`} alt="" className="h-24 w-full rounded object-cover" />
+                <img src={versionedAssetUrl(`/api/kachel/${slot}`, image)} alt="" className="h-24 w-full rounded object-cover" />
               ) : (
                 <p className="text-xs text-stone-500">Ohne Foto bleibt die Zeichnung.</p>
               )}
@@ -267,7 +268,7 @@ export default async function WebsitePage({ searchParams }: PageProps<"/admin/we
             {gallery.map((image) => (
               <li key={image.id} className="grid gap-3 border-t border-stone-100 pt-4 sm:grid-cols-[8rem_1fr]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={`/api/galerie/${image.id}`} alt={image.caption || "Galeriebild"} className="h-24 w-full rounded object-cover" />
+                <img src={versionedAssetUrl(`/api/galerie/${image.id}`, image.fileName)} alt={image.caption || "Galeriebild"} className="h-24 w-full rounded object-cover" />
                 <form action={updateGalleryImage.bind(null, image.id)} className="grid gap-2 sm:grid-cols-3">
                   <div className="sm:col-span-2">
                     <label className={label}>Unterschrift</label>

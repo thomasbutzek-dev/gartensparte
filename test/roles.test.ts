@@ -7,6 +7,7 @@ import {
   canWriteRole,
   isDemoRole,
 } from "@/lib/roles";
+import { isMoneyLetterGroup, isMoneyLetterType } from "@/lib/letter-catalog";
 
 describe("Rollen", () => {
   it("Demo darf alles anschauen, aber nichts speichern", () => {
@@ -32,3 +33,16 @@ describe("Rollen", () => {
     expect(canSeeSettingsRole("kassenwart")).toBe(false);
   });
 });
+
+describe("Briefarten", () => {
+  it("Rechnungen und Mahnungen gehören zur Kasse", () => {
+    expect(isMoneyLetterType("rechnung")).toBe(true);
+    expect(isMoneyLetterType("mahnung")).toBe(true);
+    expect(isMoneyLetterType("abmahnung")).toBe(false);
+    expect(isMoneyLetterType("kuendigung")).toBe(false);
+    expect(isMoneyLetterType("rundschreiben")).toBe(false);
+    expect(isMoneyLetterGroup("zahlung")).toBe(true);
+    expect(isMoneyLetterGroup("abmahnung")).toBe(false);
+  });
+});
+

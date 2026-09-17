@@ -24,7 +24,15 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
           <h1 className="text-xl font-bold">Vorstand-Anmeldung</h1>
           <p className="mt-1 text-sm text-stone-500">Verwaltung der Gartensparte</p>
         </div>
-        {user && (
+        {user && user.mustChangePassword && (
+          <p className="rounded-md bg-amber-100 px-4 py-3 text-sm text-amber-900">
+            Bitte legen Sie zuerst ein eigenes Passwort fest.{" "}
+            <Link href="/login/passwort" className="font-medium underline">
+              Passwort festlegen
+            </Link>
+          </p>
+        )}
+        {user && !user.mustChangePassword && (
           <p className="rounded-md bg-amber-100 px-4 py-3 text-sm text-amber-900">
             Gerade angemeldet als {user.name}
             {user.role === "demo" ? " (Demo, nur anschauen)" : ` (${roleLabels[user.role]})`}.

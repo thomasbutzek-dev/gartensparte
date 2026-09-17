@@ -1,4 +1,5 @@
 import type { VereinsSettings } from "@/lib/settings";
+import { versionedAssetUrl } from "@/lib/media";
 import { photoMuted, photoScrim, photoText } from "@/lib/ui";
 
 const arts = [
@@ -50,7 +51,7 @@ export default function GardenScenes({ settings }: { settings: VereinsSettings }
             {scene.image ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={`/api/kachel/${scene.slot}`}
+                src={versionedAssetUrl(`/api/kachel/${scene.slot}`, scene.image)}
                 alt=""
                 loading="lazy"
                 decoding="async"

@@ -33,6 +33,9 @@ export default async function AufgabenPage({ searchParams }: PageProps<"/admin/a
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Aufgaben</h1>
       {params.ok && <p className="rounded-md bg-green-100 px-4 py-3 text-green-800">Aufgabe angelegt.</p>}
+      {params.fehler === "eingabe" && (
+        <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">Bitte die Aufgabe prüfen.</p>
+      )}
 
       <form action={createTask} className={`${card} grid gap-3 sm:grid-cols-2 lg:grid-cols-5`}>
         <div className="lg:col-span-2">

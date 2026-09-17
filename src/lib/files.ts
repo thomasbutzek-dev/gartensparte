@@ -5,8 +5,13 @@ import { readFile, rename, unlink, writeFile } from "node:fs/promises";
 import { extname, join, resolve, sep } from "node:path";
 import { shrinkUploadedImage, type ImagePresetName } from "@/lib/image";
 
-/** Öffentliche Bilder dürfen eine Stunde im Browser bleiben. */
+/** Öffentliche Bilder ohne Versionsquery: eine Stunde. Mit ?v= Dateiname: ein Jahr, unveränderlich. */
 export const PUBLIC_IMAGE_CACHE = "public, max-age=3600";
+export const VERSIONED_IMAGE_CACHE = "public, max-age=31536000, immutable";
+
+export function imageCacheControl(request: Request): string {
+  return new URL(request.url).searchParams.has("v") ? VERSIONED_IMAGE_CACHE : PUBLIC_IMAGE_CACHE;
+}
 
 const storedImageExtensions = new Set([".jpg", ".jpeg", ".png", ".webp"]);
 
@@ -32,15 +37,16 @@ export async function fileResponse(
     return new Response("Nicht gefunden", { status: 404 });
   }
   const buffer = await readFile(path);
-  const mimeType = options.mimeType || mimeFromName(fileName);
+  const mimeType = mimeFromName(fileName);
   const bytes = new Uint8Array(buffer);
   const safeName = (options.downloadName ?? fileName).replace(/["\r\n]/g, "");
+  const inline = isStoredImageName(fileName) || extname(fileName).toLowerCase() === ".pdf";
   const headers: Record<string, string> = {
     "content-type": mimeType,
     "content-length": String(bytes.byteLength),
     "cache-control": options.cache ?? "private, no-store",
     "x-content-type-options": "nosniff",
-    "content-disposition": `inline; filename="${safeName}"`,
+    "content-disposition": `${inline ? "inline" : "attachment"}; filename="${safeName}"`,
   };
   return new Response(bytes, { status: 200, headers });
 }
@@ -105,12 +111,15 @@ export async function saveUpload(directory: string, file: File): Promise<{ fileN
   const extension = allowedUploadTypes[file.type] ?? fromName;
   if (!extension) return { error: "Erlaubt sind PDF, JPG, PNG, WebP, DOCX und XLSX." };
   const original = Buffer.from(await file.arrayBuffer());
+  if (!uploadMatchesExtension(extension, original)) {
+    return { error: "Die Datei passt nicht zum angegebenen Typ." };
+  }
   if (extension === ".jpg" || extension === ".png" || extension === ".webp") {
     return writeImage(directory, original, "photo");
   }
   const fileName = `${Date.now()}-${randomBytes(6).toString("hex")}${extension}`;
   await writeFile(join(directory, fileName), original);
-  return { fileName, mimeType: file.type || "application/octet-stream" };
+  return { fileName, mimeType: mimeFromName(fileName) };
 }
 
 async function writeImage(
@@ -188,4 +197,22 @@ export function mimeFromName(fileName: string): string {
     ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   };
   return map[extname(fileName).toLowerCase()] ?? "application/octet-stream";
+}
+
+/** Prüft die Dateikennung, nicht nur den vom Browser gemeldeten Typ. */
+export function uploadMatchesExtension(extension: string, bytes: Buffer): boolean {
+  if (extension === ".pdf") return bytes.length >= 5 && bytes.subarray(0, 5).toString("latin1") === "%PDF-";
+  if (extension === ".docx" || extension === ".xlsx") return bytes.length >= 4 && bytes[0] === 0x50 && bytes[1] === 0x4b;
+  if (extension === ".jpg") return bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+  if (extension === ".png") {
+    return bytes.length >= 8 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47;
+  }
+  if (extension === ".webp") {
+    return (
+      bytes.length >= 12 &&
+      bytes.subarray(0, 4).toString("ascii") === "RIFF" &&
+      bytes.subarray(8, 12).toString("ascii") === "WEBP"
+    );
+  }
+  return false;
 }

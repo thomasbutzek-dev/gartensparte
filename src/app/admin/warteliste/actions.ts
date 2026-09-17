@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { db, tables } from "@/db";
@@ -8,8 +9,9 @@ import { requireWrite } from "@/lib/auth";
 
 export async function setApplicantStatus(applicantId: number, formData: FormData) {
   await requireWrite();
-  const status = z.enum(["offen", "kontaktiert", "vergeben", "zurueckgezogen"]).parse(formData.get("status"));
-  db.update(tables.applicants).set({ status }).where(eq(tables.applicants.id, applicantId)).run();
+  const parsed = z.enum(["offen", "kontaktiert", "vergeben", "zurueckgezogen"]).safeParse(formData.get("status"));
+  if (!parsed.success) redirect("/admin/warteliste?fehler=eingabe");
+  db.update(tables.applicants).set({ status: parsed.data }).where(eq(tables.applicants.id, applicantId)).run();
   revalidatePath("/admin/warteliste");
 }
 

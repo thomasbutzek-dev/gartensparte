@@ -14,12 +14,14 @@ import {
   isDemoRole,
   type Role,
 } from "@/lib/roles";
+import { isMoneyLetterGroup, isMoneyLetterType } from "@/lib/letter-catalog";
 
-const SESSION_COOKIE = "session";
+const SESSION_COOKIE = process.env.NODE_ENV === "production" ? "__Host-session" : "session";
+const SESSION_COOKIE_ALIASES = ["session", "__Host-session"] as const;
 const SESSION_DAYS = 14;
 
 export type { Role };
-export type SessionUser = { id: number; name: string; username: string; role: Role };
+export type SessionUser = { id: number; name: string; username: string; role: Role; mustChangePassword: boolean };
 
 export { hashPassword, verifyPassword } from "@/lib/password";
 
@@ -29,32 +31,39 @@ function hashToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
 }
 
+function sessionCookieOptions(name: string, maxAge: number) {
+  return {
+    httpOnly: true,
+    sameSite: "lax" as const,
+    secure: name.startsWith("__Host-") || process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge,
+  };
+}
+
 export async function createSession(userId: number): Promise<void> {
   await destroySession();
   const token = randomBytes(32).toString("hex");
   const expiresAt = Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000;
   db.insert(tables.sessions).values({ id: hashToken(token), userId, expiresAt }).run();
   const jar = await cookies();
-  jar.set(SESSION_COOKIE, token, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: SESSION_DAYS * 24 * 60 * 60,
-  });
+  jar.set(SESSION_COOKIE, token, sessionCookieOptions(SESSION_COOKIE, SESSION_DAYS * 24 * 60 * 60));
 }
 
 export async function destroySession(): Promise<void> {
   const jar = await cookies();
-  const token = jar.get(SESSION_COOKIE)?.value;
-  if (token) db.delete(tables.sessions).where(eq(tables.sessions.id, hashToken(token))).run();
-  jar.delete(SESSION_COOKIE);
+  for (const name of SESSION_COOKIE_ALIASES) {
+    const token = jar.get(name)?.value;
+    if (token) db.delete(tables.sessions).where(eq(tables.sessions.id, hashToken(token))).run();
+    if (!token && name !== SESSION_COOKIE) continue;
+    jar.set(name, "", sessionCookieOptions(name, 0));
+  }
 }
 
 /** Angemeldeten Benutzer ermitteln (oder null). Pro Request gecacht. */
 export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
   const jar = await cookies();
-  const token = jar.get(SESSION_COOKIE)?.value;
+  const token = jar.get(SESSION_COOKIE)?.value ?? jar.get("session")?.value ?? jar.get("__Host-session")?.value;
   if (!token) return null;
   const session = db.select().from(tables.sessions).where(eq(tables.sessions.id, hashToken(token))).get();
   if (!session) return null;
@@ -64,8 +73,15 @@ export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
   }
   const user = db.select().from(tables.users).where(eq(tables.users.id, session.userId)).get();
   if (!user || !user.active) return null;
-  return { id: user.id, name: user.name, username: user.username, role: user.role };
+  return { id: user.id, name: user.name, username: user.username, role: user.role, mustChangePassword: user.mustChangePassword };
 });
+
+/** Wie getSessionUser, aber ohne Sitzung mit noch nicht gewechseltem Startpasswort. */
+export async function getPrivilegedSessionUser(): Promise<SessionUser | null> {
+  const user = await getSessionUser();
+  if (!user || user.mustChangePassword) return null;
+  return user;
+}
 
 // ---------- Rechte ----------
 
@@ -98,6 +114,13 @@ export function canSeeSettings(user: SessionUser): boolean {
 }
 
 export async function requireUser(): Promise<SessionUser> {
+  const user = await requireSession();
+  if (user.mustChangePassword) redirect("/login/passwort");
+  return user;
+}
+
+/** Sitzung ohne Passwortwechsel – nur für die Seite, auf der das Startpasswort ersetzt wird. */
+export async function requireSession(): Promise<SessionUser> {
   const user = await getSessionUser();
   if (!user) redirect("/login");
   return user;
@@ -126,4 +149,21 @@ export async function requireAdminRole(): Promise<SessionUser> {
   const user = await requireUser();
   if (!canAdminister(user)) redirect("/admin?fehler=rechte");
   return user;
+}
+
+/** Rechnung/Mahnung nur Kasse (Demo darf lesen). Andere Briefe jeder Angemeldete. */
+export async function requireLetterRead(type: string): Promise<SessionUser> {
+  const user = await requireUser();
+  if (isMoneyLetterType(type) && !canSeeMoney(user)) redirect("/admin?fehler=rechte");
+  return user;
+}
+
+export async function requireLetterWrite(type: string): Promise<SessionUser> {
+  if (isMoneyLetterType(type)) return requireMoneyWrite();
+  return requireWrite();
+}
+
+export async function requireTemplateWrite(letterGroup: string): Promise<SessionUser> {
+  if (isMoneyLetterGroup(letterGroup)) return requireMoneyWrite();
+  return requireWrite();
 }

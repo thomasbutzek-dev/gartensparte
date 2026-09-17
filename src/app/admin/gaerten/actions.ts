@@ -1,7 +1,6 @@
 "use server";
 
 import { join } from "node:path";
-import { unlink } from "node:fs/promises";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { and, asc, eq, gt, isNull } from "drizzle-orm";
@@ -13,22 +12,27 @@ import { categoryFromForm, rememberGardenCategory } from "@/lib/categories";
 import { saveUpload } from "@/lib/files";
 import { applyGardenCount, parseGardenCount, removeGarden } from "@/lib/gardens";
 import { collectGardenAttributes, rememberGardenAttribute } from "@/lib/garden-attributes";
+import { revalidatePublicSite } from "@/lib/public-cache";
+import { deleteStoredFile, fail } from "@/lib/form";
 
 const gardenSchema = z.object({
   sizeSqm: z.coerce.number().min(0).max(100000).optional(),
   status: z.enum(["verpachtet", "frei", "kuendigung", "entfaellt"]),
   meterNumber: z.string().trim().max(100).default(""),
+  waterMeterNumber: z.string().trim().max(100).default(""),
   note: z.string().trim().max(5000).default(""),
 });
 
 function parseGarden(formData: FormData) {
   const size = String(formData.get("sizeSqm") ?? "").replace(",", ".");
-  return gardenSchema.parse({
+  const parsed = gardenSchema.safeParse({
     sizeSqm: size === "" ? undefined : size,
     status: formData.get("status"),
     meterNumber: formData.get("meterNumber"),
+    waterMeterNumber: formData.get("waterMeterNumber"),
     note: formData.get("note"),
   });
+  return parsed.success ? parsed.data : null;
 }
 
 function readGardenNumber(formData: FormData): number | null {
@@ -45,6 +49,7 @@ function numberIsTaken(gardenId: number, number: number): boolean {
 export async function updateGarden(gardenId: number, formData: FormData) {
   await requireWrite();
   const data = parseGarden(formData);
+  if (!data) redirect(`/admin/gaerten/${gardenId}?fehler=eingabe`);
   const number = readGardenNumber(formData);
   if (number === null) redirect(`/admin/gaerten/${gardenId}?fehler=nummer`);
   if (numberIsTaken(gardenId, number)) redirect(`/admin/gaerten/${gardenId}?fehler=vergeben`);
@@ -63,6 +68,7 @@ export async function updateGarden(gardenId: number, formData: FormData) {
       status: data.status,
       attributes: JSON.stringify(collectGardenAttributes(formData)),
       meterNumber: data.meterNumber,
+      waterMeterNumber: data.waterMeterNumber,
       note: data.note,
     })
     .where(eq(tables.gardens.id, gardenId))
@@ -71,6 +77,7 @@ export async function updateGarden(gardenId: number, formData: FormData) {
   revalidatePath("/admin/gaerten");
   revalidatePath("/freie-gaerten");
   revalidatePath("/admin/karte");
+  revalidatePublicSite();
   redirect(`/admin/gaerten/${gardenId}?ok=1`);
 }
 
@@ -83,6 +90,7 @@ export async function setGardenCount(formData: FormData) {
   revalidatePath("/admin");
   revalidatePath("/freie-gaerten");
   revalidatePath("/admin/karte");
+  revalidatePublicSite();
   const query = new URLSearchParams({
     ok: "anzahl",
     angelegt: String(result.created),
@@ -96,20 +104,21 @@ export async function setGardenCount(formData: FormData) {
 export async function deleteGarden(gardenId: number, formData: FormData) {
   await requireWrite();
   if (String(formData.get("bestaetigt")) !== "ja") {
-    redirect(`/admin/gaerten/${gardenId}?fehler=bestaetigung`);
+    fail(`/admin/gaerten/${gardenId}`, "bestaetigung");
   }
   const result = removeGarden(gardenId);
   if ("error" in result) {
     if (result.error === "fehlt") redirect("/admin/gaerten");
-    redirect(`/admin/gaerten/${gardenId}?fehler=pacht-loeschen`);
+    fail(`/admin/gaerten/${gardenId}`, "pacht-loeschen");
   }
   for (const fileName of result.files) {
-    await unlink(join(uploadsDir, "gaerten", fileName)).catch(() => {});
+    await deleteStoredFile(join(uploadsDir, "gaerten", fileName));
   }
   revalidatePath("/admin/gaerten");
   revalidatePath("/admin");
   revalidatePath("/freie-gaerten");
   revalidatePath("/admin/karte");
+  revalidatePublicSite();
   redirect("/admin/gaerten?ok=geloescht");
 }
 
@@ -122,6 +131,8 @@ export async function createGarden(formData: FormData) {
   db.insert(tables.gardens).values({ number, status: "frei" }).run();
   const created = db.select({ id: tables.gardens.id }).from(tables.gardens).where(eq(tables.gardens.number, number)).get();
   revalidatePath("/admin/gaerten");
+  revalidatePath("/freie-gaerten");
+  revalidatePublicSite();
   if (created) redirect(`/admin/gaerten/${created.id}?ok=angelegt`);
   redirect("/admin/gaerten?ok=angelegt");
 }
@@ -142,6 +153,7 @@ export async function quickSaveGarden(gardenId: number, formData: FormData) {
   const data = parseGarden(formData);
   const current = db.select().from(tables.gardens).where(eq(tables.gardens.id, gardenId)).get();
   if (!current) redirect("/admin/gaerten");
+  if (!data) redirect(`/admin/gaerten/erfassen?nr=${current.number}&fehler=eingabe`);
   const number = readGardenNumber(formData);
   if (number === null) redirect(`/admin/gaerten/erfassen?nr=${current.number}&fehler=nummer`);
   if (numberIsTaken(gardenId, number)) redirect(`/admin/gaerten/erfassen?nr=${current.number}&fehler=vergeben`);
@@ -152,6 +164,7 @@ export async function quickSaveGarden(gardenId: number, formData: FormData) {
       status: data.status,
       attributes: JSON.stringify(collectGardenAttributes(formData)),
       meterNumber: data.meterNumber,
+      waterMeterNumber: data.waterMeterNumber,
       note: data.note,
     })
     .where(eq(tables.gardens.id, gardenId))
@@ -183,6 +196,8 @@ export async function quickSaveGarden(gardenId: number, formData: FormData) {
     .limit(1)
     .get();
   revalidatePath("/admin/gaerten");
+  revalidatePath("/freie-gaerten");
+  revalidatePublicSite();
   if (next) redirect(`/admin/gaerten/erfassen?nr=${next.number}&ok=1`);
   redirect("/admin/gaerten?ok=erfasst");
 }
@@ -195,10 +210,12 @@ const tenantSchema = z.object({
 /** Pächterwechsel: offenes Pachtverhältnis beenden, neues anlegen. */
 export async function changeTenant(gardenId: number, formData: FormData) {
   await requireWrite();
-  const data = tenantSchema.parse({
+  const parsed = tenantSchema.safeParse({
     memberId: formData.get("memberId"),
     startDate: parseDateInput(String(formData.get("startDate") ?? "")) || today(),
   });
+  if (!parsed.success) redirect(`/admin/gaerten/${gardenId}?fehler=eingabe`);
+  const data = parsed.data;
   const open = db
     .select()
     .from(tables.tenancies)
@@ -210,6 +227,8 @@ export async function changeTenant(gardenId: number, formData: FormData) {
   db.insert(tables.tenancies).values({ gardenId, memberId: data.memberId, startDate: data.startDate }).run();
   db.update(tables.gardens).set({ status: "verpachtet" }).where(eq(tables.gardens.id, gardenId)).run();
   revalidatePath(`/admin/gaerten/${gardenId}`);
+  revalidatePath("/freie-gaerten");
+  revalidatePublicSite();
   redirect(`/admin/gaerten/${gardenId}?ok=1`);
 }
 
@@ -227,6 +246,8 @@ export async function endTenancy(gardenId: number, formData: FormData) {
     db.update(tables.gardens).set({ status: "frei" }).where(eq(tables.gardens.id, gardenId)).run();
   }
   revalidatePath(`/admin/gaerten/${gardenId}`);
+  revalidatePath("/freie-gaerten");
+  revalidatePublicSite();
   redirect(`/admin/gaerten/${gardenId}?ok=1`);
 }
 
@@ -276,7 +297,7 @@ export async function deleteGardenDocument(docId: number, gardenId: number) {
   const doc = db.select().from(tables.gardenDocuments).where(eq(tables.gardenDocuments.id, docId)).get();
   if (doc) {
     db.delete(tables.gardenDocuments).where(eq(tables.gardenDocuments.id, docId)).run();
-    await unlink(join(uploadsDir, "gaerten", doc.fileName)).catch(() => {});
+    await deleteStoredFile(join(uploadsDir, "gaerten", doc.fileName));
   }
   revalidatePath(`/admin/gaerten/${gardenId}`);
   redirect(`/admin/gaerten/${gardenId}?ok=1`);

@@ -9,9 +9,10 @@ import SaveButton from "@/components/SaveButton";
 import { btn, card, input, label } from "@/lib/ui";
 import { updateNews } from "../actions";
 
-export default async function NewsBearbeitenPage({ params }: PageProps<"/admin/news/[id]">) {
+export default async function NewsBearbeitenPage({ params, searchParams }: PageProps<"/admin/news/[id]">) {
   await requireUser();
   const { id } = await params;
+  const query = await searchParams;
   const item = db.select().from(tables.news).where(eq(tables.news.id, Number(id))).get();
   if (!item) notFound();
 
@@ -21,6 +22,12 @@ export default async function NewsBearbeitenPage({ params }: PageProps<"/admin/n
         <h1 className="text-2xl font-bold">Meldung bearbeiten</h1>
         <Link href="/admin/news" className={btn}>← Zur Liste</Link>
       </div>
+      {query.fehler === "text" && (
+        <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">Bitte einen Text zur Meldung schreiben.</p>
+      )}
+      {query.fehler === "eingabe" && (
+        <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">Bitte Titel und Sichtbarkeit prüfen.</p>
+      )}
       <form action={updateNews.bind(null, item.id)} className={`${card} space-y-4`}>
         <div>
           <label className={label} htmlFor="title">Titel *</label>

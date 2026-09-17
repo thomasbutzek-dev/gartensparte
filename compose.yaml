@@ -13,3 +13,5 @@ services:
       # Passwörter der ersten Konten (nur beim allerersten Start relevant)
       ADMIN_START_PASSWORD: ${ADMIN_START_PASSWORD:-gartensparte-start}
       DEMO_START_PASSWORD: ${DEMO_START_PASSWORD:-gartensparte-demo}
+      # Lokales Compose läuft als production-Image – Demo trotzdem an, außer ENABLE_DEMO=0
+      ENABLE_DEMO: ${ENABLE_DEMO:-1}

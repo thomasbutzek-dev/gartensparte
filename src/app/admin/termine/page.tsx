@@ -19,6 +19,9 @@ export default async function AdminTerminePage({ searchParams }: PageProps<"/adm
         Versammlung, Arbeitseinsatz, Fest. Ein Entwurf bleibt intern, veröffentlicht erscheint der Termin auf der Startseite.
       </p>
       {params.ok && <p className="rounded-md bg-green-100 px-4 py-3 text-green-800">Gespeichert.</p>}
+      {params.fehler === "eingabe" && (
+        <p className="rounded-md bg-red-100 px-4 py-3 text-red-800">Bitte Titel und Datum angeben.</p>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-[1fr_24rem]">
         <div className={card}>

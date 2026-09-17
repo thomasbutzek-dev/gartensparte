@@ -42,6 +42,7 @@ next-env.d.ts
 
 # app data (SQLite, uploads, generated PDFs)
 /data/
+/data-recovery/
 
 # von postinstall aus pdfjs-dist kopiert
 /public/pdf.worker.min.mjs

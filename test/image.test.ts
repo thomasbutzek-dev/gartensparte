@@ -6,7 +6,7 @@ import { PNG } from "pngjs";
 import sharp from "sharp";
 import { describe, expect, it } from "vitest";
 import { IMAGE_PRESETS, MAX_IMAGE_EDGE, shrinkUploadedImage } from "@/lib/image";
-import { imageTypeFromFile, replaceStoredImage, saveImageUpload, saveUpload } from "@/lib/files";
+import { imageTypeFromFile, replaceStoredImage, saveImageUpload, saveUpload, uploadMatchesExtension } from "@/lib/files";
 
 function noisyPng(width: number, height: number, alpha = false): Buffer {
   const png = new PNG({ width, height, colorType: alpha ? 6 : 2 });
@@ -154,5 +154,23 @@ describe("Bilder verkleinern", () => {
     const again = await replaceStoredImage(dir, "titel.png", "hero");
     expect(again).toMatchObject({ changed: true, fileName: "titel.jpg" });
     expect(await readdir(dir)).toEqual(["titel.jpg"]);
+  });
+});
+
+describe("Upload-Kennung", () => {
+  it("erkennt PDF, Bilder und Office-Dateien am Inhalt", () => {
+    expect(uploadMatchesExtension(".pdf", Buffer.from("%PDF-1.4 more"))).toBe(true);
+    expect(uploadMatchesExtension(".pdf", Buffer.from("<html></html>"))).toBe(false);
+    expect(uploadMatchesExtension(".jpg", Buffer.from([0xff, 0xd8, 0xff, 0xe0]))).toBe(true);
+    expect(uploadMatchesExtension(".png", Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))).toBe(true);
+    expect(uploadMatchesExtension(".webp", Buffer.from("RIFF....WEBP"))).toBe(true);
+    expect(uploadMatchesExtension(".docx", Buffer.from([0x50, 0x4b, 0x03, 0x04, 0x00]))).toBe(true);
+    expect(uploadMatchesExtension(".xlsx", Buffer.from("not-zip"))).toBe(false);
+  });
+
+  it("lehnt ein PDF ohne Dateikennung ab", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "gartensparte-pdf-"));
+    const file = new File([Buffer.from("<script>")], "brief.pdf", { type: "application/pdf" });
+    await expect(saveUpload(dir, file)).resolves.toMatchObject({ error: "Die Datei passt nicht zum angegebenen Typ." });
   });
 });

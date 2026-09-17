@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { requireAdminRole } from "@/lib/auth";
 import { readRichText } from "@/lib/rich-text";
 import { getSettings, saveSettings } from "@/lib/settings";
+import { revalidatePublicSite } from "@/lib/public-cache";
 
 function text(formData: FormData, key: string, max = 500): string {
   return String(formData.get(key) ?? "").trim().slice(0, max);
@@ -36,6 +37,8 @@ export async function updateSettings(formData: FormData) {
     umlageBezeichnung: text(formData, "umlageBezeichnung") || current.umlageBezeichnung,
     stromCentProKwh: euroCents(formData, "stromProKwh", current.stromCentProKwh),
     stromGrundgebuehrCents: euroCents(formData, "stromGrundgebuehr", current.stromGrundgebuehrCents),
+    wasserCentProM3: euroCents(formData, "wasserProM3", current.wasserCentProM3),
+    wasserGrundgebuehrCents: euroCents(formData, "wasserGrundgebuehr", current.wasserGrundgebuehrCents),
     arbeitsstundenSoll: num(formData, "arbeitsstundenSoll", current.arbeitsstundenSoll),
     arbeitsstundenSatzCents: euroCents(formData, "arbeitsstundenSatz", current.arbeitsstundenSatzCents),
     zahlungszielTage: Math.round(num(formData, "zahlungszielTage", current.zahlungszielTage)),
@@ -43,5 +46,6 @@ export async function updateSettings(formData: FormData) {
     datenschutzText: readRichText(formData, "datenschutzText", 20000),
   });
   revalidatePath("/", "layout");
+  revalidatePublicSite();
   redirect("/admin/einstellungen?ok=1");
 }

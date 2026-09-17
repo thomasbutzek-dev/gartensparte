@@ -4,7 +4,7 @@ import { db, tables } from "@/db";
 import { requireUser } from "@/lib/auth";
 import { getSettings } from "@/lib/settings";
 import { DateField } from "@/components/DateField";
-import { euro, formatDate, today } from "@/lib/format";
+import { formatDate, today } from "@/lib/format";
 import SaveButton from "@/components/SaveButton";
 import { btn, card, input, label, tableClass, td, th } from "@/lib/ui";
 import { creditedWorkHours, listWorkDutyOptions, workExemptionsForYear } from "@/lib/work-hours";
@@ -38,7 +38,16 @@ export default async function ArbeitsstundenPage({ searchParams }: PageProps<"/a
   const selectedExemption = selectedMember ? exemptionByMember.get(selectedMember.id) ?? null : null;
   const dutyOptions = listWorkDutyOptions();
 
-  const years = [...new Set([new Date().getFullYear(), ...allHours.map((h) => Number(h.date.slice(0, 4)))])].sort((a, b) => b - a);
+  const years = [
+    ...new Set([
+      new Date().getFullYear(),
+      new Date().getFullYear() - 1,
+      ...allHours.map((h) => Number(h.date.slice(0, 4))),
+      ...db.select({ year: tables.workExemptions.year }).from(tables.workExemptions).all().map((row) => row.year),
+    ]),
+  ]
+    .filter((value) => Number.isInteger(value) && value >= 2000)
+    .sort((a, b) => b - a);
 
   return (
     <div className="space-y-6">
@@ -54,8 +63,9 @@ export default async function ArbeitsstundenPage({ searchParams }: PageProps<"/a
         </form>
       </div>
       <p className="text-sm text-stone-500">
-        Soll: {settings.arbeitsstundenSoll} Stunden pro Mitglied und Jahr. Fehlstunden werden mit {euro(settings.arbeitsstundenSatzCents)}/Stunde
-        berechnet (beim Rechnungslauf unter Zahlungen). Sondertätigkeiten zählen für das jeweilige Jahr als erfüllt.
+        Soll: {settings.arbeitsstundenSoll} Stunden pro Mitglied und Jahr. Der Rechnungslauf unter Zahlungen nimmt genau
+        dieses Jahr: was hier steht, steht auf der Rechnung {year}. Ein Vorjahr braucht ihr nur, wenn ihr alte Stunden
+        nachträglich eintragt.
       </p>
 
       {params.ok === "befreiung" && (
@@ -97,8 +107,8 @@ export default async function ArbeitsstundenPage({ searchParams }: PageProps<"/a
       <section className={`${card} space-y-3`}>
         <h2 className="text-lg font-semibold">Befreiung oder Sondertätigkeit</h2>
         <p className="text-sm text-stone-500">
-          Vorstand, Wegbeauftragte und ähnliche Ämter leisten keine Einzelstunden. Für das Jahr gilt das Soll als erfüllt,
-          im Rechnungslauf entstehen keine Fehlstunden.
+          Vorstand, Wegbeauftragte und ähnliche Ämter leisten keine Einzelstunden. Für {year} gilt das Soll als erfüllt,
+          im Rechnungslauf {year} entstehen daraus keine Fehlstunden.
         </p>
         <DutyForm
           members={members}

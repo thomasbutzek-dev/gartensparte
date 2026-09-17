@@ -1,16 +1,23 @@
 import Link from "next/link";
 import { asc } from "drizzle-orm";
 import { db, tables } from "@/db";
-import { requireUser } from "@/lib/auth";
-import { COMMON_PLACEHOLDERS, letterGroupLabels, type LetterGroup } from "@/lib/letter-catalog";
+import { canSeeMoney, requireUser } from "@/lib/auth";
+import { COMMON_PLACEHOLDERS, isMoneyLetterGroup, letterGroupLabels, type LetterGroup } from "@/lib/letter-catalog";
 import SaveButton from "@/components/SaveButton";
 import { btn, card, input, label } from "@/lib/ui";
 import { createTemplate, deleteTemplate, updateTemplate } from "../actions";
 
 export default async function VorlagenPage({ searchParams }: PageProps<"/admin/schriftverkehr/vorlagen">) {
-  await requireUser();
+  const user = await requireUser();
   const params = await searchParams;
-  const templates = db.select().from(tables.letterTemplates).orderBy(asc(tables.letterTemplates.letterGroup), asc(tables.letterTemplates.name)).all();
+  const money = canSeeMoney(user);
+  const templates = db
+    .select()
+    .from(tables.letterTemplates)
+    .orderBy(asc(tables.letterTemplates.letterGroup), asc(tables.letterTemplates.name))
+    .all()
+    .filter((template) => money || !isMoneyLetterGroup(template.letterGroup));
+  const groupOptions = Object.entries(letterGroupLabels).filter(([value]) => money || value !== "zahlung");
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -35,7 +42,7 @@ export default async function VorlagenPage({ searchParams }: PageProps<"/admin/s
           <div>
             <label className={label} htmlFor="newGroup">Gruppe</label>
             <select id="newGroup" name="letterGroup" className={input}>
-              {Object.entries(letterGroupLabels).map(([value, text]) => (
+              {groupOptions.map(([value, text]) => (
                 <option key={value} value={value}>{text}</option>
               ))}
             </select>

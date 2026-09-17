@@ -41,9 +41,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/admin"
     { href: "/admin/website", title: "Website pflegen", text: "Texte, Fotos, Anfahrt, Vorstand." },
     { href: "/admin/termine", title: "Termin eintragen", text: "Erscheint auf der Startseite." },
     { href: "/admin/news", title: "News schreiben", text: "Zuerst als Entwurf, dann veröffentlichen." },
-    ...(canSeeMoney(user)
-      ? [{ href: "/admin/schriftverkehr", title: "Brief schreiben", text: "Jahresrechnung, Kündigung, Rundschreiben." }]
-      : []),
+    { href: "/admin/schriftverkehr", title: "Brief schreiben", text: "Abmahnung, Kündigung, Rundschreiben." },
     { href: "/admin/dokumente", title: "Dokument ablegen", text: "Satzung, Formulare, intern oder öffentlich." },
   ];
 
