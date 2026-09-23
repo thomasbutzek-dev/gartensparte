@@ -25,7 +25,7 @@ function refresh() {
   revalidatePublicSite();
 }
 
-async function storeNoticeImage(file: FormDataEntryValue): Promise<string | null> {
+async function storeNoticeImage(file: FormDataEntryValue | null): Promise<string | null> {
   if (!(file instanceof File) || file.size === 0) return "";
   const saved = await saveImageUpload(join(uploadsDir, "schaukasten"), file);
   if ("error" in saved) return null;

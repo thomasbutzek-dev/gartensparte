@@ -57,7 +57,8 @@ function readFlags(): Record<ModuleId, boolean> {
   try {
     const parsed = JSON.parse(row.value) as Partial<Record<ModuleId, unknown>>;
     for (const item of catalog) {
-      if (typeof parsed[item.id] === "boolean") flags[item.id] = parsed[item.id];
+      const value = parsed[item.id];
+      if (typeof value === "boolean") flags[item.id] = value;
     }
   } catch {
     return { ...defaults };
