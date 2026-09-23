@@ -1,6 +1,7 @@
 import { asc, eq } from "drizzle-orm";
 import { db, tables } from "@/db";
 import { canSeeMoney, getPrivilegedSessionUser } from "@/lib/auth";
+import { moduleEnabled } from "@/lib/modules";
 import { formatDate } from "@/lib/format";
 
 function csvField(value: string | number | null): string {
@@ -10,6 +11,7 @@ function csvField(value: string | number | null): string {
 
 export async function GET(request: Request) {
   const user = await getPrivilegedSessionUser();
+  if (!moduleEnabled("kasse")) return new Response("Nicht gefunden", { status: 404 });
   if (!user || !canSeeMoney(user)) return new Response("Keine Berechtigung", { status: 403 });
 
   const url = new URL(request.url);

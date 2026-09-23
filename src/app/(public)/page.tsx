@@ -18,6 +18,7 @@ import SiteContainer from "@/components/SiteContainer";
 import GardenHeroArt from "@/components/GardenHeroArt";
 import GardenScenes from "@/components/GardenScenes";
 import PublicMap from "@/components/PublicMap";
+import HomeModules from "@/components/HomeModules";
 import ImpressionStrip from "@/components/ImpressionStrip";
 import RichText from "@/components/RichText";
 
@@ -83,9 +84,9 @@ export default async function StartPage() {
 
       <GardenScenes settings={settings} />
 
-      <SiteContainer className="space-y-14 py-12">
+      <SiteContainer className="space-y-14 pb-12 pt-14">
         <div className="grid gap-6 md:grid-cols-2">
-          <section className={card}>
+          <section className={`${card} flex h-full flex-col`}>
             <h2 className="mb-3 text-lg font-semibold">Nächste Termine</h2>
             {nextEvents.length === 0 && <p className="text-sm text-stone-500">Zurzeit sind keine Termine angekündigt.</p>}
             <ul className="space-y-3">
@@ -99,12 +100,12 @@ export default async function StartPage() {
                 </li>
               ))}
             </ul>
-            <Link href="/termine" className="mt-4 inline-block text-sm text-green-700 hover:underline">
+            <Link href="/termine" className="mt-auto inline-block pt-4 text-sm text-green-700 hover:underline">
               Alle Termine
             </Link>
           </section>
 
-          <section className={card}>
+          <section className={`${card} flex h-full flex-col`}>
             <h2 className="mb-3 text-lg font-semibold">News</h2>
             {latestNews.length === 0 && <p className="text-sm text-stone-500">Noch keine Neuigkeiten.</p>}
             <ul className="space-y-3">
@@ -118,17 +119,18 @@ export default async function StartPage() {
                 </li>
               ))}
             </ul>
-            <Link href="/news" className="mt-4 inline-block text-sm text-green-700 hover:underline">
+            <Link href="/news" className="mt-auto inline-block pt-4 text-sm text-green-700 hover:underline">
               Alle News
             </Link>
           </section>
+          <HomeModules settings={settings} />
         </div>
 
         <ImpressionStrip images={gallery} />
 
         <div className="grid gap-6 md:grid-cols-2">
-          <section className={card}>
-            <h2 className="mb-4 text-lg font-semibold">Vorstand</h2>
+          <section className={`${card} flex h-full flex-col`}>
+            <h2 className="mb-3 text-lg font-semibold">Vorstand</h2>
             {board.length === 0 ? (
               <RichText html={boardExtraText(settings)} className="text-sm text-stone-600" />
             ) : (
@@ -157,12 +159,12 @@ export default async function StartPage() {
             {officeHoursLabel(settings) ? (
               <p className="mt-3 text-sm text-stone-600">{officeHoursLabel(settings)}</p>
             ) : null}
-            <Link href="/vorstand" className="mt-4 inline-block text-sm text-green-700 hover:underline">
+            <Link href="/vorstand" className="mt-auto inline-block pt-4 text-sm text-green-700 hover:underline">
               Alle Ansprechpartner
             </Link>
           </section>
 
-          <section className={card}>
+          <section className={`${card} flex h-full flex-col`}>
             <h2 className="mb-3 text-lg font-semibold">Anfahrt</h2>
             {address.slice(1).length > 0 ? (
               <p>

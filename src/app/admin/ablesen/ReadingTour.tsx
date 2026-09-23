@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { and, asc, desc, eq, isNull } from "drizzle-orm";
 import { db, tables } from "@/db";
-import { requireUser } from "@/lib/auth";
+import { canSeeMoney, requireUser } from "@/lib/auth";
 import { DateField } from "@/components/DateField";
 import SaveButton from "@/components/SaveButton";
 import { formatDate, today } from "@/lib/format";
@@ -19,7 +19,7 @@ export default async function ReadingTour({
   kind: MeterKind;
   searchParams: Promise<{ nr?: string; stand?: string; ok?: string; fehler?: string }>;
 }) {
-  await requireUser();
+  const user = await requireUser();
   const params = await searchParams;
   const meta = meterKind[kind];
   const gardens = db
@@ -121,8 +121,12 @@ export default async function ReadingTour({
         {withMeter.length === 0
           ? `${meta.numberLabel} in der Liste eintragen. Die Tour nimmt nur Gärten mit Zähler.`
           : `${readThisYear.length} von ${withMeter.length} mit Zähler ${currentYear} abgelesen.`}
-        {" "}Abrechnung: unter{" "}
-        <Link href="/admin/zahlungen" className="text-green-700 hover:underline">Zahlungen</Link> den Jahreslauf erzeugen.
+        {canSeeMoney(user) ? (
+          <>
+            {" "}Abrechnung: unter{" "}
+            <Link href="/admin/zahlungen" className="text-green-700 hover:underline">Zahlungen</Link> den Jahreslauf erzeugen.
+          </>
+        ) : null}
       </p>
       <form className="flex flex-wrap items-end gap-2" action={meta.path}>
         <div>

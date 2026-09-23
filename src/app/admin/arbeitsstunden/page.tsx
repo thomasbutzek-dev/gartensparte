@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { asc, desc, eq } from "drizzle-orm";
 import { db, tables } from "@/db";
-import { requireUser } from "@/lib/auth";
+import { canSeeMoney, requireUser } from "@/lib/auth";
 import { getSettings } from "@/lib/settings";
 import { DateField } from "@/components/DateField";
 import { formatDate, today } from "@/lib/format";
@@ -12,7 +12,7 @@ import DutyForm from "./DutyForm";
 import { addWorkHours, clearWorkExemption, deleteWorkHours } from "./actions";
 
 export default async function ArbeitsstundenPage({ searchParams }: PageProps<"/admin/arbeitsstunden">) {
-  await requireUser();
+  const user = await requireUser();
   const params = await searchParams;
   const settings = getSettings();
   const year = Number(params.jahr) || new Date().getFullYear();
@@ -63,9 +63,11 @@ export default async function ArbeitsstundenPage({ searchParams }: PageProps<"/a
         </form>
       </div>
       <p className="text-sm text-stone-500">
-        Soll: {settings.arbeitsstundenSoll} Stunden pro Mitglied und Jahr. Der Rechnungslauf unter Zahlungen nimmt genau
-        dieses Jahr: was hier steht, steht auf der Rechnung {year}. Ein Vorjahr braucht ihr nur, wenn ihr alte Stunden
-        nachträglich eintragt.
+        Soll: {settings.arbeitsstundenSoll} Stunden pro Mitglied und Jahr.
+        {canSeeMoney(user)
+          ? ` Der Rechnungslauf unter Zahlungen nimmt genau dieses Jahr: was hier steht, steht auf der Rechnung ${year}.`
+          : ""}
+        {" "}Ein Vorjahr braucht ihr nur, wenn ihr alte Stunden nachträglich eintragt.
       </p>
 
       {params.ok === "befreiung" && (
@@ -107,8 +109,8 @@ export default async function ArbeitsstundenPage({ searchParams }: PageProps<"/a
       <section className={`${card} space-y-3`}>
         <h2 className="text-lg font-semibold">Befreiung oder Sondertätigkeit</h2>
         <p className="text-sm text-stone-500">
-          Vorstand, Wegbeauftragte und ähnliche Ämter leisten keine Einzelstunden. Für {year} gilt das Soll als erfüllt,
-          im Rechnungslauf {year} entstehen daraus keine Fehlstunden.
+          Vorstand, Wegbeauftragte und ähnliche Ämter leisten keine Einzelstunden. Für {year} gilt das Soll als erfüllt.
+          {canSeeMoney(user) ? ` Im Rechnungslauf ${year} entstehen daraus keine Fehlstunden.` : ""}
         </p>
         <DutyForm
           members={members}

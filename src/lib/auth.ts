@@ -1,7 +1,7 @@
 import "server-only";
 import { createHash, randomBytes } from "node:crypto";
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { cache } from "react";
 import { eq } from "drizzle-orm";
 import { db, tables } from "@/db";
@@ -15,6 +15,7 @@ import {
   type Role,
 } from "@/lib/roles";
 import { isMoneyLetterGroup, isMoneyLetterType } from "@/lib/letter-catalog";
+import { moduleEnabled } from "@/lib/modules";
 
 const SESSION_COOKIE = process.env.NODE_ENV === "production" ? "__Host-session" : "session";
 const SESSION_COOKIE_ALIASES = ["session", "__Host-session"] as const;
@@ -95,12 +96,12 @@ export function canWrite(user: SessionUser): boolean {
 
 /** Kassengeschäfte ausführen: Zahlungen, Rechnungen, Mahnungen. */
 export function canManageMoney(user: SessionUser): boolean {
-  return canManageMoneyRole(user.role);
+  return moduleEnabled("kasse") && canManageMoneyRole(user.role);
 }
 
-/** Kasse anschauen, ohne zu buchen. Demo darf mitlesen. */
+/** Kasse anschauen, ohne zu buchen. Demo darf mitlesen. Ausgeschaltetes Modul: niemand. */
 export function canSeeMoney(user: SessionUser): boolean {
-  return canSeeMoneyRole(user.role);
+  return moduleEnabled("kasse") && canSeeMoneyRole(user.role);
 }
 
 /** Benutzerverwaltung und Einstellungen ändern. */
@@ -132,14 +133,16 @@ export async function requireWrite(): Promise<SessionUser> {
   return user;
 }
 
-/** Kasse ausführen. Demo kommt hier nicht durch. */
+/** Kasse ausführen. Demo kommt hier nicht durch. Ausgeschaltetes Modul gibt es nicht. */
 export async function requireMoneyRole(): Promise<SessionUser> {
+  if (!moduleEnabled("kasse")) notFound();
   const user = await requireUser();
   if (!canManageMoney(user)) redirect("/admin?fehler=rechte");
   return user;
 }
 
 export async function requireMoneyWrite(): Promise<SessionUser> {
+  if (!moduleEnabled("kasse")) notFound();
   const user = await requireWrite();
   if (!canManageMoney(user)) redirect("/admin?fehler=rechte");
   return user;
@@ -153,6 +156,7 @@ export async function requireAdminRole(): Promise<SessionUser> {
 
 /** Rechnung/Mahnung nur Kasse (Demo darf lesen). Andere Briefe jeder Angemeldete. */
 export async function requireLetterRead(type: string): Promise<SessionUser> {
+  if (isMoneyLetterType(type) && !moduleEnabled("kasse")) notFound();
   const user = await requireUser();
   if (isMoneyLetterType(type) && !canSeeMoney(user)) redirect("/admin?fehler=rechte");
   return user;
@@ -164,6 +168,9 @@ export async function requireLetterWrite(type: string): Promise<SessionUser> {
 }
 
 export async function requireTemplateWrite(letterGroup: string): Promise<SessionUser> {
-  if (isMoneyLetterGroup(letterGroup)) return requireMoneyWrite();
+  if (isMoneyLetterGroup(letterGroup)) {
+    if (!moduleEnabled("kasse")) notFound();
+    return requireMoneyWrite();
+  }
   return requireWrite();
 }

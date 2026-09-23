@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { asc, desc, eq, isNull, notInArray } from "drizzle-orm";
 import { db, tables } from "@/db";
-import { requireUser } from "@/lib/auth";
+import { requireUser, canSeeMoney } from "@/lib/auth";
 import { formatDate } from "@/lib/format";
 import { boardArchiveTypeLabels, isMoneyLetterGroup } from "@/lib/letter-catalog";
 import { btn, card, tableClass, td, th } from "@/lib/ui";
@@ -11,7 +11,7 @@ import LetterComposer from "./LetterComposer";
 const MONEY_TYPES = ["rechnung", "mahnung"] as const;
 
 export default async function SchriftverkehrPage({ searchParams }: PageProps<"/admin/schriftverkehr">) {
-  await requireUser();
+  const user = await requireUser();
   const params = await searchParams;
   const typeFilter = typeof params.typ === "string" ? params.typ : "";
 
@@ -93,7 +93,8 @@ export default async function SchriftverkehrPage({ searchParams }: PageProps<"/a
       )}
 
       <p className="text-sm text-stone-500">
-        Abmahnungen, Kündigungen und Rundschreiben. Rechnungen und Mahnungen liegen unter Zahlungen (Kasse).
+        Abmahnungen, Kündigungen und Rundschreiben.
+        {canSeeMoney(user) ? " Rechnungen und Mahnungen liegen unter Zahlungen." : ""}
       </p>
 
       <LetterComposer templates={templates} tenancies={activeTenancies} />

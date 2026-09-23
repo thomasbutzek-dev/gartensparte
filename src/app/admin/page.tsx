@@ -9,6 +9,7 @@ import { card } from "@/lib/ui";
 export default async function DashboardPage({ searchParams }: PageProps<"/admin">) {
   const user = await requireUser();
   const params = await searchParams;
+  const showKasse = canSeeMoney(user);
 
   const gardens = db.select().from(tables.gardens).all();
   const occupancy = gardenCountsFrom(gardens);
@@ -23,7 +24,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/admin"
     .filter((e) => e.date >= today())
     .slice(0, 5);
 
-  const payments = db.select().from(tables.payments).all();
+  const payments = showKasse ? db.select().from(tables.payments).all() : [];
   const overdue = payments.filter((p) => p.paidCents < p.amountCents && p.dueDate && p.dueDate < today());
   const overdueCents = overdue.reduce((sum, p) => sum + (p.amountCents - p.paidCents), 0);
 
@@ -31,7 +32,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/admin"
     { label: "Neue Nachrichten", value: String(unreadInquiries.length), href: "/admin/posteingang" },
     { label: "Offene Warteliste", value: String(openApplicants.length), href: "/admin/warteliste" },
     { label: "Offene Aufgaben", value: String(openTasks.length), href: "/admin/aufgaben" },
-    ...(canSeeMoney(user)
+    ...(showKasse
       ? [{ label: "Überfällige Zahlungen", value: `${overdue.length} (${euro(overdueCents)})`, href: "/admin/zahlungen?filter=ueberfaellig" }]
       : []),
   ];
@@ -135,7 +136,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/admin"
         </Link>
       </section>
 
-      {canSeeMoney(user) && overdue.length > 0 && (
+      {showKasse && overdue.length > 0 && (
         <section className={card}>
           <h2 className="mb-3 text-lg font-semibold">Überfällige Zahlungen</h2>
           <ul className="space-y-2 text-sm">

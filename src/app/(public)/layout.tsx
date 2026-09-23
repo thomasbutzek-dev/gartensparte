@@ -1,10 +1,10 @@
 export const dynamic = "force-dynamic";
 
 import Link from "next/link";
-import { addressLines, mapsSearchUrl, showFreeGardenCount } from "@/lib/site";
-import { officeHoursLabel } from "@/lib/settings";
+import { addressLines, showFreeGardenCount } from "@/lib/site";
 import { getPublicGardenCounts, getPublicSettings } from "@/lib/public-cache";
 import { versionedAssetUrl } from "@/lib/media";
+import { moduleEnabled } from "@/lib/modules";
 import { publicHeader, publicNavHover } from "@/lib/ui";
 import SiteContainer from "@/components/SiteContainer";
 
@@ -13,17 +13,22 @@ const navItems = [
   { href: "/termine", label: "Termine" },
   { href: "/news", label: "News" },
   { href: "/freie-gaerten", label: "Freie Gärten" },
-  { href: "/dokumente", label: "Dokumente" },
-  { href: "/vorstand", label: "Vorstand" },
   { href: "/kontakt", label: "Kontakt" },
 ] as const;
 
 export default async function PublicLayout({ children }: { children: React.ReactNode }) {
   const settings = await getPublicSettings();
   const address = addressLines(settings);
-  const mapsUrl = mapsSearchUrl(settings);
   const occupancy = await getPublicGardenCounts();
   const showFreeBadge = showFreeGardenCount(occupancy);
+  const moreLinks = [
+    { href: "/dokumente", label: "Dokumente" },
+    { href: "/vorstand", label: "Vorstand" },
+    moduleEnabled("schaukasten") ? { href: "/schaukasten", label: "Schaukasten" } : null,
+    moduleEnabled("newsletter") ? { href: "/newsletter", label: "Newsletter" } : null,
+    moduleEnabled("wetter") ? { href: "/wetter", label: "Wetter" } : null,
+    moduleEnabled("verband") ? { href: "/verband", label: "Verband" } : null,
+  ].filter((item) => item !== null);
 
   return (
     <div className="flex min-h-screen flex-col bg-stone-50">
@@ -58,37 +63,45 @@ export default async function PublicLayout({ children }: { children: React.React
                 ) : null}
               </Link>
             ))}
+            <details className="relative">
+              <summary className={`${publicNavHover} cursor-pointer list-none [&::-webkit-details-marker]:hidden`}>
+                Mehr
+              </summary>
+              <div className="absolute right-0 z-40 mt-1 min-w-44 rounded-md border border-stone-200 bg-white py-1 text-sm text-stone-800 shadow-lg">
+                {moreLinks.map((item) => (
+                  <Link key={item.href} href={item.href} className="block px-3 py-2 hover:bg-stone-100">
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            </details>
           </nav>
         </SiteContainer>
       </header>
       <main className="flex-1">{children}</main>
       <footer className="border-t border-stone-200 bg-white">
-        <SiteContainer className="grid gap-6 py-8 text-sm text-stone-600 md:grid-cols-3">
+        <SiteContainer className="flex flex-col gap-6 py-8 text-sm text-stone-600 md:flex-row md:items-start md:justify-between">
           <div>
             <p className="font-semibold text-stone-800">{settings.vereinName}</p>
             {address.slice(1).map((line) => (
               <p key={line}>{line}</p>
             ))}
-            {mapsUrl ? (
-              <a href={mapsUrl} target="_blank" rel="noreferrer" className="mt-2 inline-block text-green-700 hover:underline">
-                Lage auf OpenStreetMap
-              </a>
-            ) : null}
           </div>
-          <div>
-            {settings.vereinTelefon ? <p>Telefon: {settings.vereinTelefon}</p> : null}
-            {settings.vereinEmail ? <p>E-Mail: {settings.vereinEmail}</p> : null}
-            {officeHoursLabel(settings) ? (
-              <p className="mt-2 whitespace-pre-line">{officeHoursLabel(settings)}</p>
-            ) : null}
-          </div>
+          {settings.vereinTelefon || settings.vereinEmail ? (
+            <div>
+              {settings.vereinTelefon ? <p>Telefon: {settings.vereinTelefon}</p> : null}
+              {settings.vereinEmail ? <p>E-Mail: {settings.vereinEmail}</p> : null}
+            </div>
+          ) : null}
           <div className="flex flex-col gap-1 md:items-end">
             <Link href="/impressum" className="hover:underline">Impressum</Link>
             <Link href="/datenschutz" className="hover:underline">Datenschutz</Link>
             <Link href="/login" className="hover:underline">Vorstand-Login</Link>
-            <p className="mt-3 text-stone-400">© {new Date().getFullYear()} {settings.vereinName}</p>
           </div>
         </SiteContainer>
+        <p className="border-t border-stone-200 py-4 text-center text-sm text-stone-400">
+          © {new Date().getFullYear()} {settings.vereinName}
+        </p>
       </footer>
     </div>
   );

@@ -351,7 +351,7 @@ export default async function GartenAktePage({ params, searchParams }: PageProps
 
         {/* Zahlungen & Schreiben */}
         <section className={card}>
-          <h2 className="mb-3 text-lg font-semibold">Zahlungen & Schreiben</h2>
+          <h2 className="mb-3 text-lg font-semibold">{canSeeMoney(user) ? "Zahlungen & Schreiben" : "Schreiben"}</h2>
           {canSeeMoney(user) && gardenPayments.length > 0 && (
             <table className={`${tableClass} mb-4`}>
               <thead>
@@ -399,7 +399,9 @@ export default async function GartenAktePage({ params, searchParams }: PageProps
           <>
             <p className="text-sm text-stone-500">
               Die Nummer {garden.number} verschwindet komplett, samt Akte, Chronik und hochgeladenen Dateien.
-              Zahlungen und Briefe bleiben beim Mitglied, ohne Gartenbezug.
+              {canSeeMoney(user)
+                ? " Zahlungen und Briefe bleiben beim Mitglied, ohne Gartenbezug."
+                : " Briefe bleiben beim Mitglied, ohne Gartenbezug."}
             </p>
             <form action={deleteGarden.bind(null, garden.id)} className="space-y-3">
               <label className="flex items-start gap-2 text-sm text-stone-700">

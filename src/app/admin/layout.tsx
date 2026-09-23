@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import DemoProvider from "@/components/DemoProvider";
 import AdminNav, { type AdminNavGroup } from "@/components/AdminNav";
 import { canAdminister, canSeeMoney, canSeeSettings, isDemo, requireUser } from "@/lib/auth";
+import { moduleEnabled } from "@/lib/modules";
 
 const roleLabels = {
   admin: "Administrator",
@@ -52,6 +53,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         { href: "/admin/termine", label: "Termine" },
         { href: "/admin/news", label: "News" },
         { href: "/admin/dokumente", label: "Dokumente" },
+        ...(moduleEnabled("schaukasten") ? [{ href: "/admin/schaukasten", label: "Schaukasten" }] : []),
+        ...(moduleEnabled("newsletter") ? [{ href: "/admin/newsletter", label: "Newsletter" }] : []),
+        ...(moduleEnabled("wetter") ? [{ href: "/admin/wetter", label: "Wetter" }] : []),
+        ...(moduleEnabled("verband") ? [{ href: "/admin/verband", label: "Verband" }] : []),
       ],
     },
     ...(canSeeSettings(user)
@@ -59,7 +64,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           {
             title: "Zugang",
             items: [
-              ...(canAdminister(user) ? [{ href: "/admin/benutzer", label: "Konten" }] : []),
+              ...(canAdminister(user)
+                ? [
+                    { href: "/admin/benutzer", label: "Konten" },
+                    { href: "/admin/module", label: "Module" },
+                  ]
+                : []),
               { href: "/admin/einstellungen", label: "Einstellungen" },
             ],
           },

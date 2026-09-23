@@ -309,6 +309,24 @@ export const settings = sqliteTable("settings", {
   value: text("value").notNull(),
 });
 
+export const notices = sqliteTable("notices", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  title: text("title").notNull(),
+  body: text("body").notNull().default(""),
+  status: text("status").notNull().default("entwurf"),
+  pinned: integer("pinned").notNull().default(0),
+  validFrom: text("valid_from").notNull().default(""),
+  validUntil: text("valid_until").notNull().default(""),
+  imageFile: text("image_file").notNull().default(""),
+  createdAt: text("created_at").notNull(),
+});
+
+export const newsletterSubscribers = sqliteTable("newsletter_subscribers", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  email: text("email").notNull().unique(),
+  createdAt: text("created_at").notNull(),
+});
+
 /** Login-Sperren und Formular-Limits (Schlüssel z.B. login:admin oder form:hash). */
 export const rateLimits = sqliteTable("rate_limits", {
   key: text("key").primaryKey(),

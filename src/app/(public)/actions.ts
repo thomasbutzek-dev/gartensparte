@@ -1,9 +1,11 @@
 "use server";
 
-import { redirect } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { db, tables } from "@/db";
 import { nowIso } from "@/lib/format";
+import { moduleEnabled } from "@/lib/modules";
 import { clientFingerprint, consumeFormSlot } from "@/lib/rate-limit";
 import { verifyTurnstile } from "@/lib/turnstile";
 
@@ -80,4 +82,34 @@ export async function submitApplication(formData: FormData) {
     .values({ ...parsed.data, createdAt: nowIso() })
     .run();
   redirect("/freie-gaerten?ok=1");
+}
+
+const newsletterEmail = z.string().trim().max(200).regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
+
+export async function subscribeNewsletter(formData: FormData) {
+  if (!moduleEnabled("newsletter")) notFound();
+  if (isSpam(formData)) redirect("/newsletter?ok=an");
+  if (!(await verifyTurnstile(formData, "newsletter"))) redirect("/newsletter?fehler=captcha");
+  if (!consumeFormSlot(`form:newsletter:an:${await clientFingerprint()}`, 5, 15 * 60 * 1000)) {
+    redirect("/newsletter?fehler=warte");
+  }
+  const parsed = newsletterEmail.safeParse(formData.get("email"));
+  if (!parsed.success) redirect("/newsletter?fehler=1");
+  db.insert(tables.newsletterSubscribers)
+    .values({ email: parsed.data.toLowerCase(), createdAt: nowIso() })
+    .onConflictDoNothing()
+    .run();
+  redirect("/newsletter?ok=an");
+}
+
+export async function unsubscribeNewsletter(formData: FormData) {
+  if (!moduleEnabled("newsletter")) notFound();
+  if (isSpam(formData)) redirect("/newsletter?ok=ab");
+  if (!consumeFormSlot(`form:newsletter:ab:${await clientFingerprint()}`, 5, 15 * 60 * 1000)) {
+    redirect("/newsletter?fehler=warte");
+  }
+  const parsed = newsletterEmail.safeParse(formData.get("email"));
+  if (!parsed.success) redirect("/newsletter?fehler=1");
+  db.delete(tables.newsletterSubscribers).where(eq(tables.newsletterSubscribers.email, parsed.data.toLowerCase())).run();
+  redirect("/newsletter?ok=ab");
 }

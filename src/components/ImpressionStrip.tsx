@@ -6,7 +6,7 @@ export default function ImpressionStrip({ images }: { images: Image[] }) {
   if (images.length > 0) {
     return (
       <section>
-        <h2 className="mb-4 text-lg font-semibold">Impressionen</h2>
+        <h2 className="mb-3 text-lg font-semibold">Impressionen</h2>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
           {images.map((image) => (
             <figure key={image.id} className="overflow-hidden rounded-lg bg-stone-100">
@@ -28,7 +28,7 @@ export default function ImpressionStrip({ images }: { images: Image[] }) {
 
   return (
     <section>
-      <h2 className="mb-4 text-lg font-semibold">Impressionen</h2>
+      <h2 className="mb-3 text-lg font-semibold">Impressionen</h2>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {placeholders.map((item) => (
           <figure key={item.label} className="overflow-hidden rounded-lg bg-green-100/80">

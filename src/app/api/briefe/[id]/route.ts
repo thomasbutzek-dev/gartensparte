@@ -3,6 +3,7 @@ import { db, lettersDir, tables } from "@/db";
 import { canSeeMoney, getPrivilegedSessionUser } from "@/lib/auth";
 import { fileResponse } from "@/lib/files";
 import { isMoneyLetterType } from "@/lib/letter-catalog";
+import { moduleEnabled } from "@/lib/modules";
 
 export async function GET(_request: Request, { params }: RouteContext<"/api/briefe/[id]">) {
   const user = await getPrivilegedSessionUser();
@@ -10,6 +11,9 @@ export async function GET(_request: Request, { params }: RouteContext<"/api/brie
   const { id } = await params;
   const letter = db.select().from(tables.letters).where(eq(tables.letters.id, Number(id))).get();
   if (!letter || !letter.fileName || letter.status === "entwurf") {
+    return new Response("Nicht gefunden", { status: 404 });
+  }
+  if (isMoneyLetterType(letter.type) && !moduleEnabled("kasse")) {
     return new Response("Nicht gefunden", { status: 404 });
   }
   if (isMoneyLetterType(letter.type) && !canSeeMoney(user)) {

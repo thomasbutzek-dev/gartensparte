@@ -33,6 +33,7 @@ for (const dir of [
   join(uploadsDir, "website"),
   join(uploadsDir, "galerie"),
   join(uploadsDir, "vorstand"),
+  join(uploadsDir, "schaukasten"),
   lettersDir,
 ]) {
   mkdirSync(dir, { recursive: true });
@@ -88,6 +89,9 @@ function ensureRuntimeTables() {
   }
   if (!hasColumn("users", "must_change_password")) {
     sqlite.exec(`ALTER TABLE users ADD COLUMN must_change_password INTEGER NOT NULL DEFAULT 0`);
+  }
+  if (hasColumn("notices", "id") && !hasColumn("notices", "image_file")) {
+    sqlite.exec(`ALTER TABLE notices ADD COLUMN image_file TEXT NOT NULL DEFAULT ''`);
   }
 }
 

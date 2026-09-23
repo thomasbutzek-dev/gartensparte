@@ -32,12 +32,14 @@ export default async function MitgliedPage({ params, searchParams }: PageProps<"
     .orderBy(desc(tables.tenancies.startDate))
     .all();
 
-  const memberPayments = db
-    .select()
-    .from(tables.payments)
-    .where(eq(tables.payments.memberId, member.id))
-    .orderBy(desc(tables.payments.year))
-    .all();
+  const memberPayments = canSeeMoney(user)
+    ? db
+        .select()
+        .from(tables.payments)
+        .where(eq(tables.payments.memberId, member.id))
+        .orderBy(desc(tables.payments.year))
+        .all()
+    : [];
   const openCents = memberPayments.reduce((sum, p) => sum + Math.max(0, p.amountCents - p.paidCents), 0);
 
   const hours = db
@@ -176,7 +178,9 @@ export default async function MitgliedPage({ params, searchParams }: PageProps<"
             {canAdminister(user) && (
               <form action={deleteAction}>
                 <button className={btnDanger}>Endgültig löschen</button>
-                <p className="mt-1 text-xs text-stone-500">Nur möglich, wenn keine Pachtverhältnisse oder Zahlungen existieren.</p>
+                <p className="mt-1 text-xs text-stone-500">
+                  Nur möglich, wenn keine Pachtverhältnisse{canSeeMoney(user) ? " oder Zahlungen" : ""} existieren.
+                </p>
               </form>
             )}
           </section>

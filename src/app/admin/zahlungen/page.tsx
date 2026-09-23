@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { asc, desc, eq, inArray, isNull } from "drizzle-orm";
 import { db, tables } from "@/db";
-import { redirect } from "next/navigation";
+import { redirect, notFound } from "next/navigation";
 import { canSeeMoney, requireUser } from "@/lib/auth";
+import { moduleEnabled } from "@/lib/modules";
 import { DateField } from "@/components/DateField";
 import { euro, formatDate, today } from "@/lib/format";
 import { previewAnnualInvoices } from "@/lib/annual-invoices";
@@ -34,6 +35,7 @@ function zahlungenHref(year: number, filter: string, typeFilter: string, next: {
 
 export default async function ZahlungenPage({ searchParams }: PageProps<"/admin/zahlungen">) {
   const user = await requireUser();
+  if (!moduleEnabled("kasse")) notFound();
   if (!canSeeMoney(user)) redirect("/admin?fehler=rechte");
   const params = await searchParams;
   const currentYear = new Date().getFullYear();

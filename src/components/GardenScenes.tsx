@@ -41,8 +41,8 @@ export default function GardenScenes({ settings }: { settings: VereinsSettings }
   if (scenes.length === 0) return null;
 
   return (
-    <section className="bg-stone-50 py-10">
-      <div className="mx-auto grid max-w-5xl gap-4 px-4 sm:grid-cols-3">
+    <section className="bg-stone-50 pt-14">
+      <div className="mx-auto grid max-w-5xl gap-6 px-4 sm:grid-cols-3">
         {scenes.map((scene) => (
           <article
             key={scene.slot}
