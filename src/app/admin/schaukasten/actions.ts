@@ -11,10 +11,11 @@ import { nowIso, parseDateInput } from "@/lib/format";
 import { deleteStoredFile } from "@/lib/form";
 import { requireModule } from "@/lib/modules";
 import { revalidatePublicSite } from "@/lib/public-cache";
+import { readRichText } from "@/lib/rich-text";
 
 const noticeSchema = z.object({
   title: z.string().trim().min(1).max(160),
-  body: z.string().trim().max(4000),
+  body: z.string().max(8000),
   status: z.enum(["entwurf", "veroeffentlicht"]),
   pinned: z.boolean(),
   validFrom: z.string(),
@@ -43,7 +44,7 @@ export async function createNotice(formData: FormData) {
   const validUntil = parseDateInput(String(formData.get("validUntil") ?? "")) ?? "";
   const parsed = noticeSchema.safeParse({
     title: formData.get("title"),
-    body: formData.get("body"),
+    body: readRichText(formData, "body", 8000),
     status: formData.get("status"),
     pinned: formData.get("pinned") === "1",
     validFrom,

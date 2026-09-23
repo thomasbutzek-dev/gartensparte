@@ -85,8 +85,10 @@ export default async function StartPage() {
       <GardenScenes settings={settings} />
 
       <SiteContainer className="space-y-14 pb-12 pt-14">
-        <div className="grid gap-6 md:grid-cols-2">
-          <section className={`${card} flex h-full flex-col`}>
+        <HomeModules
+          settings={settings}
+          left={
+          <section className={`${card} flex flex-col`}>
             <h2 className="mb-3 text-lg font-semibold">Nächste Termine</h2>
             {nextEvents.length === 0 && <p className="text-sm text-stone-500">Zurzeit sind keine Termine angekündigt.</p>}
             <ul className="space-y-3">
@@ -104,8 +106,9 @@ export default async function StartPage() {
               Alle Termine
             </Link>
           </section>
-
-          <section className={`${card} flex h-full flex-col`}>
+          }
+          right={
+          <section className={`${card} flex flex-col`}>
             <h2 className="mb-3 text-lg font-semibold">News</h2>
             {latestNews.length === 0 && <p className="text-sm text-stone-500">Noch keine Neuigkeiten.</p>}
             <ul className="space-y-3">
@@ -123,13 +126,13 @@ export default async function StartPage() {
               Alle News
             </Link>
           </section>
-          <HomeModules settings={settings} />
-        </div>
+          }
+        />
 
         <ImpressionStrip images={gallery} />
 
-        <div className="grid gap-6 md:grid-cols-2">
-          <section className={`${card} flex h-full flex-col`}>
+        <div className="grid items-start gap-6 md:grid-cols-2">
+          <section className={`${card} flex flex-col`}>
             <h2 className="mb-3 text-lg font-semibold">Vorstand</h2>
             {board.length === 0 ? (
               <RichText html={boardExtraText(settings)} className="text-sm text-stone-600" />
@@ -164,7 +167,7 @@ export default async function StartPage() {
             </Link>
           </section>
 
-          <section className={`${card} flex h-full flex-col`}>
+          <section className={`${card} flex flex-col`}>
             <h2 className="mb-3 text-lg font-semibold">Anfahrt</h2>
             {address.slice(1).length > 0 ? (
               <p>

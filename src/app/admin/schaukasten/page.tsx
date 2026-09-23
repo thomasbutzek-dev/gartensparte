@@ -1,8 +1,10 @@
 import { requireUser } from "@/lib/auth";
 import { formatDate } from "@/lib/format";
 import { listNotices } from "@/lib/notices";
+import { richTextPlain } from "@/lib/rich-text";
 import { requireModule } from "@/lib/modules";
 import { DateField } from "@/components/DateField";
+import RichTextEditor from "@/components/RichTextEditor";
 import FileDropField from "@/components/FileDropField";
 import SaveButton from "@/components/SaveButton";
 import { badge, btn, btnDanger, card, input, label, tableClass, td, th } from "@/lib/ui";
@@ -39,7 +41,7 @@ export default async function SchaukastenAdminPage({ searchParams }: PageProps<"
         </div>
         <div>
           <label className={label} htmlFor="body">Text</label>
-          <textarea id="body" name="body" rows={4} maxLength={4000} className={input} />
+          <RichTextEditor id="body" name="body" />
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
@@ -89,7 +91,7 @@ export default async function SchaukastenAdminPage({ searchParams }: PageProps<"
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={`/api/schaukasten/${item.id}`} alt="" className="mt-2 h-16 w-24 rounded object-cover" />
                     ) : null}
-                    {item.body ? <p className="mt-1 max-w-md whitespace-pre-line text-stone-600">{item.body}</p> : null}
+                    {richTextPlain(item.body) ? <p className="mt-1 max-w-md text-stone-600">{richTextPlain(item.body)}</p> : null}
                     <form action={setNoticeImage} className="mt-2 flex flex-wrap items-center gap-2">
                       <input type="hidden" name="id" value={item.id} />
                       <FileDropField compact name="image" label="Bild hierher ziehen" />
